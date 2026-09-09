@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚁 DroneWeather - Données Réelles</title>
+    <!-- ===== FONT AWESOME POUR LES ICÔNES ===== -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* ===== STYLES ===== */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: #0f1e2e; color: #dce8f0; padding: 10px; display: flex; justify-content: center; min-height: 100vh; }
+        .app { max-width: 1500px; width: 100%; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .title { font-size: clamp(20px, 4vw, 30px); font-weight: bold; color: #6bb5e8; }
+        .title span { color: #f0b34b; }
+        .title .badge-api { font-size: clamp(10px, 1.2vw, 14px); background: #1a5a3a; padding: 2px 12px; border-radius: 20px; color: #8dca9d; margin-left: 8px; display: inline-block; }
+        
+        .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .btn-help { background: #3a5a7a; border: none; color: #dce8f0; padding: 5px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: clamp(12px, 1.2vw, 15px); }
+        .btn-help:hover { background: #4a7a9a; }
+        .btn-airops { background: #5a3a3a; border: none; color: #dce8f0; padding: 5px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: clamp(12px, 1.2vw, 15px); text-decoration: none; display: inline-block; }
+        .btn-airops:hover { background: #7a4a4a; }
+        
+        .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #142b40; padding: 8px 14px; border-radius: 10px; width: 100%; }
+        .controls label { font-size: clamp(12px, 1.2vw, 15px); display: flex; align-items: center; gap: 4px; }
+        .controls select, .controls input { background: #1a3550; border: 1px solid #2a4a6a; color: #dce8f0; padding: 4px 8px; border-radius: 5px; font-size: clamp(12px, 1.2vw, 15px); }
+        .controls input[type="number"] { width: 55px; }
+        .controls input[type="text"] { width: clamp(120px, 20vw, 180px); font-size: clamp(12px, 1.2vw, 15px); }
+        .btn { background: #2a5a7a; border: none; color: #dce8f0; padding: 5px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: clamp(12px, 1.2vw, 15px); white-space: nowrap; }
+        .btn:hover { background: #3a7a9a; }
+        .btn-success { background: #1a6a3a; }
+        .btn-success:hover { background: #2a8a4a; }
+        .btn-location { background: #5a4a7a; }
+        .btn-location:hover { background: #7a5a9a; }
+        
+        .search-container { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .search-wrapper { position: relative; display: inline-block; }
+        .location-status { font-size: clamp(11px, 1vw, 13px); color: #5a8a7a; margin-left: 4px; }
+        
+        .settings-panel { background: #102535; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; border: 1px solid #1a3a55; display: none; }
+        .settings-panel.open { display: block; }
+        .settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px 14px; }
+        .settings-grid label { font-size: clamp(11px, 1.1vw, 14px); display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+        .settings-grid input { width: 60px; background: #1a3550; border: 1px solid #2a4a6a; color: #dce8f0; padding: 3px 6px; border-radius: 4px; font-size: clamp(11px, 1.1vw, 14px); }
+        .toggle-settings { cursor: pointer; color: #6bb5e8; text-decoration: underline; font-size: clamp(12px, 1.2vw, 15px); }
+        
+        .day-navigation { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+        .day-navigation button { background: #1a3550; border: 1px solid #2a4a6a; color: #dce8f0; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .day-navigation button:hover { background: #2a4a6a; }
+        .day-label { font-size: clamp(13px, 1.2vw, 16px); font-weight: 700; color: #6bb5e8; min-width: 200px; text-align: center; }
+        
+        .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: clamp(12px, 1.1vw, 14px); margin: 4px 0 10px 0; }
+        .legend span { display: flex; align-items: center; gap: 5px; }
+        .legend .dot { width: 14px; height: 14px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+        .legend .dot.green { background: #3a8a5a; }
+        .legend .dot.orange { background: #b88a3a; }
+        .legend .dot.red { background: #9a4a4a; }
+        
+        .table-wrap { overflow-x: auto; background: #0a1825; border-radius: 10px; padding: 4px; border: 1px solid #1a3050; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: clamp(11px, 1vw, 14px); min-width: 1100px; }
+        th { background: #102535; color: #8ab8d8; padding: 8px 4px; text-align: center; border-bottom: 2px solid #1a3a55; white-space: nowrap; font-size: clamp(10px, 0.9vw, 13px); font-weight: 700; }
+        td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #152a40; white-space: nowrap; font-size: clamp(11px, 1vw, 14px); }
+        .hour-row { background: #0e1f30; }
+        .hour-row:hover { background: #162a40; }
+        .hour-row.current { background: rgba(0,212,255,0.08); }
+        .hour-row.past { opacity: 0.45; }
+        
+        .status-ok { background: #2a6a4a; color: #8dca9d; font-weight: 700; border-radius: 3px; padding: 2px 8px; font-size: clamp(10px, 0.9vw, 13px); }
+        .status-warn { background: #8a7a2a; color: #e8d86a; font-weight: 700; border-radius: 3px; padding: 2px 8px; font-size: clamp(10px, 0.9vw, 13px); }
+        .status-danger { background: #7a3a3a; color: #e89a8a; font-weight: 700; border-radius: 3px; padding: 2px 8px; font-size: clamp(10px, 0.9vw, 13px); }
+        
+        .cell-ok { background: rgba(26, 240, 110, 0.25); color: #dee7e1; border-radius: 3px; padding: 2px 5px; font-weight: 600; }
+        .cell-warn { background: rgba(245, 166, 35, 0.25); color: #dee7e1; border-radius: 3px; padding: 2px 5px; font-weight: 600; }
+        .cell-danger { background: rgba(255, 71, 87, 0.25); color: #dee7e1; border-radius: 3px; padding: 2px 5px; font-weight: 600; }
+        
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 14px; font-size: clamp(10px, 0.9vw, 13px); font-weight: 700; }
+        .battery-bar { display: inline-block; width: clamp(30px, 4vw, 44px); height: 7px; background: #1a2a3a; border-radius: 3px; overflow: hidden; margin-right: 4px; vertical-align: middle; }
+        .battery-bar .fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+        .battery-text { font-size: clamp(10px, 0.9vw, 13px); font-weight: 700; }
+        
+        .score-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: clamp(11px, 1vw, 14px); font-weight: 700; min-width: 40px; }
+        .score-badge.green { background: rgba(0,212,160,0.25); color: #00d4a0; }
+        .score-badge.orange { background: rgba(245,166,35,0.25); color: #f5a623; }
+        .score-badge.red { background: rgba(255,71,87,0.25); color: #ff4757; }
+        
+        .altitude-max { font-weight: 600; }
+        .altitude-ok { color: #00d4a0; }
+        .altitude-warn { color: #f5a623; }
+        .altitude-danger { color: #ff4757; }
+        
+        .condensation-ok { color: #00d4a0; }
+        .condensation-warn { color: #f5a623; }
+        .condensation-danger { color: #ff4757; }
+        
+        .suggestions { position: absolute; background: #1a3550; border: 1px solid #2a4a6a; border-radius: 6px; max-height: 180px; overflow-y: auto; z-index: 100; width: 100%; min-width: 150px; display: none; }
+        .suggestions div { padding: 6px 12px; cursor: pointer; font-size: clamp(12px, 1.1vw, 14px); color: #dce8f0; }
+        .suggestions div:hover { background: #2a4a6a; }
+        
+        .footer { margin-top: 12px; font-size: clamp(10px, 0.8vw, 12px); color: #5a7a8a; text-align: center; border-top: 1px solid #1a3050; padding-top: 10px; }
+        .sun-info { font-size: clamp(12px, 1.1vw, 14px); color: #7aaac8; margin: 4px 0 8px 0; }
+        .sun-info span { margin-right: 12px; display: inline-block; }
+        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #2a5a7a; border-top-color: #6bb5e8; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .no-data { padding: 25px; text-align: center; color: #5a7a8a; font-size: clamp(13px, 1.2vw, 16px); }
+
+        /* ===== MODAL AIDE ===== */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: #0f1e2e; border: 1px solid #2a5a7a; border-radius: 16px; max-width: 900px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 25px 30px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+        .modal-close { position: absolute; top: 12px; right: 18px; font-size: 28px; cursor: pointer; color: #5a7a8a; background: none; border: none; }
+        .modal-close:hover { color: #dce8f0; }
+        .modal h2 { color: #6bb5e8; margin-bottom: 15px; font-size: 24px; }
+        .modal h3 { color: #8ab8d8; margin: 18px 0 8px 0; font-size: 18px; }
+        .modal p, .modal li { font-size: 14px; line-height: 1.6; color: #c8d8e0; }
+        .modal ul { padding-left: 20px; margin: 8px 0; }
+        .modal table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; min-width: auto; }
+        .modal th { background: #1a3550; color: #8ab8d8; padding: 6px 10px; border: 1px solid #1a3a55; font-size: 12px; }
+        .modal td { background: #0e1f30; color: #c8d8e0; padding: 6px 10px; border: 1px solid #1a3a55; font-size: 12px; }
+        .modal .green { color: #8dca9d; }
+        .modal .orange { color: #e8d86a; }
+        .modal .red { color: #e89a8a; }
+        .modal a { color: #6bb5e8; text-decoration: underline; }
+        .modal a:hover { color: #8ad0f0; }
+        .modal hr { border: none; border-top: 1px solid #1a3a55; margin: 12px 0; }
+        .modal .text-center { text-align: center; }
+        .modal .wool-tip { background: #1a3550; padding: 16px 20px; border-radius: 10px; margin: 12px 0; border-left: 4px solid #f5a623; }
+        .modal .wool-tip ul { margin-left: 20px; line-height: 2; }
+
+        @media (max-width: 768px) {
+            body { padding: 6px; }
+            .header { flex-direction: column; align-items: stretch; gap: 8px; }
+            .title { text-align: center; font-size: 22px; }
+            .header-right { justify-content: center; }
+            .controls { flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 8px 10px; gap: 6px; }
+            .controls label { font-size: 12px; }
+            .controls select, .controls input { font-size: 12px; padding: 3px 6px; }
+            .controls input[type="text"] { width: 130px; }
+            .btn { font-size: 12px; padding: 4px 10px; }
+            .search-container { width: 100%; justify-content: center; }
+            .search-wrapper { flex: 1; min-width: 120px; }
+            .search-wrapper input { width: 100% !important; }
+            .settings-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 4px 10px; }
+            .settings-grid label { font-size: 11px; }
+            .settings-grid input { width: 50px; font-size: 11px; }
+            .day-label { min-width: 120px; font-size: 12px; }
+            .legend { font-size: 11px; gap: 10px; }
+            .legend .dot { width: 12px; height: 12px; }
+            .sun-info span { display: block; margin-right: 0; margin-bottom: 2px; }
+            table { min-width: 800px; font-size: 11px; }
+            th { font-size: 9px; padding: 4px 2px; }
+            td { font-size: 10px; padding: 4px 2px; }
+            .cell-ok, .cell-warn, .cell-danger { padding: 1px 3px; font-size: 10px; }
+            .status-ok, .status-warn, .status-danger { font-size: 9px; padding: 1px 5px; }
+            .badge { font-size: 9px; padding: 1px 6px; }
+            .battery-bar { width: 28px; height: 6px; }
+            .battery-text { font-size: 9px; }
+            .modal { padding: 15px; }
+            .modal h2 { font-size: 20px; }
+            .modal table { font-size: 11px; }
+            .modal th, .modal td { font-size: 10px; padding: 4px 6px; }
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 4px; }
+            .title { font-size: 18px; }
+            .controls { flex-direction: column; align-items: stretch; gap: 4px; padding: 6px 8px; }
+            .controls label { font-size: 11px; justify-content: space-between; }
+            .controls select, .controls input { font-size: 11px; padding: 2px 5px; }
+            .controls input[type="text"] { width: 100%; }
+            .controls input[type="number"] { width: 50px; }
+            .search-container { flex-wrap: wrap; }
+            .search-container .btn { flex: 1; min-width: 60px; font-size: 11px; padding: 3px 8px; }
+            .btn { font-size: 11px; padding: 3px 8px; }
+            .day-label { min-width: 80px; font-size: 11px; }
+            .legend { font-size: 10px; gap: 6px; }
+            .settings-grid { grid-template-columns: 1fr 1fr; gap: 3px 8px; }
+            .settings-grid label { font-size: 10px; }
+            .settings-grid input { width: 45px; font-size: 10px; }
+            .table-wrap { padding: 2px; border-radius: 6px; }
+            table { min-width: 600px; font-size: 9px; }
+            th { font-size: 8px; padding: 3px 1px; }
+            td { font-size: 9px; padding: 3px 1px; }
+            .cell-ok, .cell-warn, .cell-danger { padding: 1px 2px; font-size: 8px; }
+            .status-ok, .status-warn, .status-danger { font-size: 8px; padding: 1px 4px; }
+            .badge { font-size: 8px; padding: 1px 4px; }
+            .battery-bar { width: 22px; height: 5px; }
+            .battery-text { font-size: 8px; }
+            .sun-info { font-size: 10px; }
+            .footer { font-size: 8px; }
+            .no-data { font-size: 11px; padding: 15px; }
+            .modal { padding: 10px; }
+            .modal h2 { font-size: 17px; }
+            .modal table { font-size: 10px; }
+            .modal th, .modal td { font-size: 9px; padding: 3px 4px; }
+        }
+
+        ::-webkit-scrollbar { height: 6px; background: #0a1825; }
+        ::-webkit-scrollbar-thumb { background: #2a5a7a; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3a7a9a; }
+        @media (max-width: 480px) { ::-webkit-scrollbar { height: 4px; } }
+    </style>
+</head>
+<body>
+<div class="app">
+    <!-- HEADER -->
+    <div class="header">
+        <div class="title">
+            🚁 Drone<span>Météo</span>
+            
+        </div>
+        <div class="header-right">
+            <a href="https://airops-supuav.fr/map/#5.05/46.49/3.95" target="_blank" class="btn-airops">🛩️ Airops-SUPUAV</a>
+            <button class="btn-help" id="helpBtn">❓ Aide</button>
+        </div>
+    </div>
+
+    <!-- CONTROLS -->
+    <div class="controls">
+        <div class="search-container">
+            <div class="search-wrapper">
+                <input type="text" id="citySearch" placeholder="Rechercher une ville..." value="La Motte Saint Jean">
+                <div class="suggestions" id="suggestions"></div>
+            </div>
+            <button class="btn" id="searchCityBtn">🔍 Chercher</button>
+            <button class="btn btn-location" id="locationBtn"><i class="fas fa-location-dot"></i> Position</button>
+            <span class="location-status" id="locationStatus"></span>
+        </div>
+        <label>📅 Jours:
+            <select id="forecastDays">
+                <option value="1">1</option>
+                <option value="3" selected>3</option>
+                <option value="4">4</option>
+                <option value="7">7</option>
+            </select>
+        </label>
+        <label>🔋 Autonomie de base (min):
+            <input type="number" id="batteryBase" value="21" min="5" max="120">
+        </label>
+        <button class="btn" id="refreshBtn"><i class="fas fa-sync-alt"></i></button>
+        <span class="toggle-settings" id="toggleSettings">⚙️ Seuils</span>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-grid">
+            <label>🌬️ Vent max (vert) <input type="number" id="maxWind" value="25"></label>
+            <label>🌬️ Vent orange <input type="number" id="maxWindOrange" value="35"></label>
+            <label>💨 Rafales max (vert) <input type="number" id="maxGust" value="30"></label>
+            <label>🌡️ Temp min <input type="number" id="minTemp" value="0"></label>
+            <label>🌡️ Temp max <input type="number" id="maxTemp" value="35"></label>
+            <label>💧 Humidité max (vert) <input type="number" id="maxHumidity" value="70"></label>
+            <label>💧 Humidité orange <input type="number" id="maxHumidityOrange" value="80"></label>
+            <label>💧 Humidité rouge <input type="number" id="maxHumidityRed" value="85"></label>
+            <label>☔ Précip prob max <input type="number" id="maxPrecipProb" value="40"></label>
+            <label>🌧️ Intensité max <input type="number" id="maxPrecipInt" value="2.5" step="0.1"></label>
+            <label>☁️ Couverture max <input type="number" id="maxCloud" value="75"></label>
+            <label>👁️ Visibilité min (vert) <input type="number" id="minVis" value="8"></label>
+            <label>👁️ Visibilité orange <input type="number" id="minVisOrange" value="5"></label>
+            <label>🛰️ KP max (vert) <input type="number" id="maxKp" value="4" step="0.5"></label>
+            <label>🛰️ KP orange <input type="number" id="maxKpOrange" value="6" step="0.5"></label>
+            <label>🔒 Sats verrouillés min <input type="number" id="minLocked" value="13"></label>
+            <label>🏔️ Base nuages min <input type="number" id="minCloudBase" value="305"></label>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <button class="btn btn-success" id="applySettingsBtn">📥 Appliquer</button>
+            <span style="font-size:clamp(10px,1vw,13px); color:#5a8a9a;">Couleurs adaptées aux seuils</span>
+        </div>
+    </div>
+
+    <!-- SUN INFO -->
+    <div class="sun-info" id="sunInfo">🌤️ Chargement des données...</div>
+
+    <!-- DAY NAVIGATION -->
+    <div class="day-navigation">
+        <button id="prevDayBtn"><i class="fas fa-chevron-left"></i></button>
+        <span class="day-label" id="dayLabel">Aujourd'hui</span>
+        <button id="nextDayBtn"><i class="fas fa-chevron-right"></i></button>
+        <span style="margin-left:auto; font-size:clamp(11px,1vw,13px); color:#5a7a8a;" id="dayCount"></span>
+    </div>
+
+
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+        <table id="forecastTable">
+            <thead>
+                <tr>
+                    <th>Heure</th>
+                    <th>🌡️ Temp</th>
+                    <th>💧 Rosée</th>
+                    <th>🌬️ Vent</th>
+                    <th>💨 Rafales</th>
+                    <th>⛰️ Alt.max</th>
+                    <th>🌧️ Intensité</th>
+                    <th>☁️ Nuages</th>
+                    <th>💧 Humidité</th>
+                    <th>📡 KP</th>
+                    <th>🛰️ Sats</th>
+                    <th>🔒 Verrou.</th>
+                    <th>🔋 Autonomie</th>
+                    <th>📊 Score</th>
+                    <th>✅ Statut</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="15" class="no-data">🔄 Chargement des données réelles...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="footer">🌐 Open-Meteo + NOAA KP · Heures de jour uniquement · Données 100% réelles · Seuils sauvegardés - F5IOR (2026)</div>
+</div>
+
+<!-- ===== MODAL AIDE ===== -->
+<div class="modal-overlay" id="helpModal">
+    <div class="modal">
+        <button class="modal-close" id="helpModalClose">&times;</button>
+        <h2>📘 Guide des conditions de vol drone</h2>
+        
+        <h3>🌡️ Conditions météo et impact sur le vol</h3>
+        <table>
+            <thead><tr><th>Paramètre</th><th>🟢 OK</th><th>🟠 Prudence</th><th>🔴 Dangereux</th></tr></thead>
+            <tbody>
+                <tr><td>💨 Vent (moyen)</td><td class="green">&lt; 25 km/h</td><td class="orange">25-35 km/h</td><td class="red">&gt; 35 km/h</td></tr>
+                <tr><td>💨 Rafales</td><td class="green">&lt; 30 km/h</td><td class="orange">30-40 km/h</td><td class="red">&gt; 40 km/h</td></tr>
+                <tr><td>🌧️ Pluie</td><td class="green">&lt; 0.5 mm/h</td><td class="orange">0.5-1 mm/h</td><td class="red">&gt; 1 mm/h</td></tr>
+                <tr><td>👁️ Visibilité</td><td class="green">&gt; 8 km</td><td class="orange">5-8 km</td><td class="red">&lt; 5 km</td></tr>
+                <tr><td>🛰️ Indice KP</td><td class="green">&lt; 4</td><td class="orange">4-6</td><td class="red">&gt; 6</td></tr>
+                <tr><td>💧 Humidité</td><td class="green">&lt; 70%</td><td class="orange">70-85%</td><td class="red">&gt; 85%</td></tr>
+                <tr><td>🔋 Batterie</td><td class="green">&gt; 5°C</td><td class="orange">0-5°C</td><td class="red">&lt; 0°C</td></tr>
+            </tbody>
+        </table>
+
+        <h3>📊 Interprétation du score</h3>
+        <table>
+            <thead><tr><th>Score</th><th>Statut</th><th>Recommandation</th></tr></thead>
+            <tbody>
+                <tr><td><span style="background:#2a6a4a;color:#8dca9d;padding:2px 10px;border-radius:12px;">70-100%</span></td><td>🟢 Vol possible</td><td>Conditions idéales, profitez du vol</td></tr>
+                <tr><td><span style="background:#8a7a2a;color:#e8d86a;padding:2px 10px;border-radius:12px;">40-69%</span></td><td>🟠 Vol prudent</td><td>Surveillez l'autonomie, restez près du point de retour</td></tr>
+                <tr><td><span style="background:#7a3a3a;color:#e89a8a;padding:2px 10px;border-radius:12px;">0-39%</span></td><td>🔴 Vol déconseillé</td><td>Risques élevés, reportez le vol</td></tr>
+            </tbody>
+        </table>
+
+        <h3>💧 Risque de condensation</h3>
+        <p style="margin-bottom:8px;"><strong>Qu'est-ce que la condensation ?</strong><br>La condensation se produit lorsque l'air humide entre en contact avec une surface froide (comme les hélices ou l'électronique du drone).</p>
+        <ul>
+            <li><span class="red">🔴 Risque élevé</span> : Écart &lt; 2°C entre température et point de rosée → Formation de gouttelettes, risque de court-circuit.</li>
+            <li><span class="orange">🟠 Risque modéré</span> : Écart 2-4°C → Surveillance recommandée.</li>
+            <li><span class="green">🟢 Risque faible</span> : Écart &gt; 4°C → Conditions favorables.</li>
+        </ul>
+        <p style="margin-top:8px;color:#ff4757;"><strong>⚠️ Humidité &gt; 85% :</strong> pénalité de -20 à -25 points sur le score → vol déconseillé.</p>
+
+        <hr>
+
+        <h3>🧵 Lecture du vent avec un bout de laine</h3>
+        <div class="wool-tip">
+            <p><strong>📏 Astuce :</strong> Attachez un bout de laine (30-40 cm) sur l'antenne de votre voiture ou un support fixe.</p>
+            <p><strong>🔍 Interprétation :</strong></p>
+            <ul>
+                <li><span style="color:#00d4a0;">⬇️ Laine pendante (0°)</span> → Vent &lt; 5 km/h → ✅ Vol parfait</li>
+                <li><span style="color:#8dca9d;">↘️ Inclinée (15-30°)</span> → Vent 5-15 km/h → ⚠️ Vol possible</li>
+                <li><span style="color:#f5a623;">➡️ Horizontale (30-45°)</span> → Vent 15-25 km/h → ⚠️ Vol limité</li>
+                <li><span style="color:#ff6b6b;">↗️ Tension forte (45-60°)</span> → Vent 25-40 km/h → ⚠️ Vol risqué</li>
+                <li><span style="color:#ff4757;font-weight:bold;">➡️ Parfaitement horizontale (60-90°)</span> → Vent &gt; 40 km/h → ⛔ Ne pas voler</li>
+            </ul>
+        </div>
+
+        <hr>
+
+        <h3>📱 Conseils supplémentaires</h3>
+        <ul>
+            <li>🌡️ <strong>Température batterie idéale</strong> : 15-35°C</li>
+            <li>📡 <strong>Activité solaire élevée</strong> (KP &gt; 6) → GPS instable, RTH risqué</li>
+            <li>💧 <strong>Condensation</strong> si écart &lt; 3°C entre température et point de rosée</li>
+            <li>⚡ <strong>Autonomie réduite</strong> par vent de face et températures extrêmes</li>
+            <li>🔋 <strong>Vérifiez la température de la batterie</strong> avant chaque vol</li>
+            <li>💧 <strong>Humidité &gt; 85%</strong> : risque de condensation, vol déconseillé</li>
+        </ul>
+
+        <hr>
+
+        <h3>🗺️ Ressources officielles</h3>
+        <ul>
+            <li>🛩️ <a href="https://airops-supuav.fr/map/#5.05/46.49/3.95" target="_blank">Airops-SUPUAV</a> - Restrictions aériennes officielles (NOTAM, arrêtés, zones)</li>
+            <li>🗺️ <a href="https://www.cartes.gouv.fr/" target="_blank">Cartes.gouv.fr</a> - Cartes des restrictions par zone</li>
+            <li>📍 <a href="https://www.geoportail.gouv.fr/" target="_blank">Géoportail</a> - Cartes IGN et orthophotos</li>
+        </ul>
+
+        <div class="text-center" style="margin-top:15px;">
+            <p style="font-size:12px; color:#5a7a8a;">DroneMétéo par F5IOR ❤️ © 2026</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// ================================================================
+// CONFIGURATION
+// ================================================================
+
+const CONFIG = {
+    lat: 46.49,
+    lng: 3.95,
+    days: 3,
+    batteryBase: 21,
+    cityName: 'La Motte Saint Jean',
+    thresholds: {
+        maxWind: 25, maxWindOrange: 35, maxGust: 30,
+        minTemp: 0, maxTemp: 35,
+        maxHumidity: 70, maxHumidityOrange: 80, maxHumidityRed: 85,
+        maxPrecipProb: 40, maxPrecipInt: 2.5,
+        maxCloud: 75, minVis: 8, minVisOrange: 5,
+        maxKp: 4, maxKpOrange: 6,
+        minLocked: 13, minCloudBase: 305
+    }
+};
+
+let processedData = [];
+let selectedDayIndex = 0;
+let isLoading = false;
+let currentCity = 'La Motte Saint Jean';
+let currentLat = CONFIG.lat;
+let currentLng = CONFIG.lng;
+
+// ================================================================
+// SAUVEGARDE DES SEUILS
+// ================================================================
+
+function saveThresholds(thresholds) {
+    try {
+        localStorage.setItem('droneWeather_thresholds', JSON.stringify(thresholds));
+        localStorage.setItem('droneWeather_batteryBase', document.getElementById('batteryBase').value);
+        localStorage.setItem('droneWeather_city', document.getElementById('citySearch').value);
+        localStorage.setItem('droneWeather_days', document.getElementById('forecastDays').value);
+        console.log('✅ Seuils sauvegardés');
+    } catch (e) {
+        console.warn('Impossible de sauvegarder:', e);
+    }
+}
+
+function loadThresholds() {
+    try {
+        const saved = localStorage.getItem('droneWeather_thresholds');
+        if (saved) {
+            const th = JSON.parse(saved);
+            CONFIG.thresholds = th;
+            
+            document.getElementById('maxWind').value = th.maxWind || 25;
+            document.getElementById('maxWindOrange').value = th.maxWindOrange || 35;
+            document.getElementById('maxGust').value = th.maxGust || 30;
+            document.getElementById('minTemp').value = th.minTemp || 0;
+            document.getElementById('maxTemp').value = th.maxTemp || 35;
+            document.getElementById('maxHumidity').value = th.maxHumidity || 70;
+            document.getElementById('maxHumidityOrange').value = th.maxHumidityOrange || 80;
+            document.getElementById('maxHumidityRed').value = th.maxHumidityRed || 85;
+            document.getElementById('maxPrecipProb').value = th.maxPrecipProb || 40;
+            document.getElementById('maxPrecipInt').value = th.maxPrecipInt || 2.5;
+            document.getElementById('maxCloud').value = th.maxCloud || 75;
+            document.getElementById('minVis').value = th.minVis || 8;
+            document.getElementById('minVisOrange').value = th.minVisOrange || 5;
+            document.getElementById('maxKp').value = th.maxKp || 4;
+            document.getElementById('maxKpOrange').value = th.maxKpOrange || 6;
+            document.getElementById('minLocked').value = th.minLocked || 13;
+            document.getElementById('minCloudBase').value = th.minCloudBase || 305;
+            return true;
+        }
+    } catch (e) {}
+    return false;
+}
+
+function loadBatteryBase() {
+    try {
+        const saved = localStorage.getItem('droneWeather_batteryBase');
+        if (saved) {
+            document.getElementById('batteryBase').value = saved;
+            CONFIG.batteryBase = parseFloat(saved) || 21;
+            return true;
+        }
+    } catch (e) {}
+    return false;
+}
+
+function loadCity() {
+    try {
+        const saved = localStorage.getItem('droneWeather_city');
+        if (saved) {
+            document.getElementById('citySearch').value = saved;
+            return saved;
+        }
+    } catch (e) {}
+    return null;
+}
+
+function loadDays() {
+    try {
+        const saved = localStorage.getItem('droneWeather_days');
+        if (saved) {
+            document.getElementById('forecastDays').value = saved;
+            CONFIG.days = parseInt(saved) || 3;
+            return true;
+        }
+    } catch (e) {}
+    return false;
+}
+
+// ================================================================
+// LISTE DES VILLES
+// ================================================================
+const CITIES = [
+    'Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Montpellier', 'Bordeaux', 'Lille',
+    'Rennes', 'Reims', 'Saint-Étienne', 'Le Havre', 'Toulon', 'Grenoble', 'Dijon', 'Angers', 'Nîmes', 'Villeurbanne',
+    'London', 'Manchester', 'Birmingham', 'Liverpool', 'Edinburgh', 'Glasgow', 'Bristol', 'Dublin', 'Belfast',
+    'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'Austin',
+    'Tokyo', 'Osaka', 'Kyoto', 'Nagoya', 'Sapporo', 'Fukuoka',
+    'Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Gold Coast', 'Canberra',
+    'Auckland', 'Wellington', 'Christchurch', 'Queenstown', 'La Motte Saint Jean', 'Dunedin', 'Hamilton',
+    'Berlin', 'Munich', 'Hamburg', 'Cologne', 'Frankfurt', 'Stuttgart', 'Düsseldorf', 'Dortmund', 'Essen', 'Leipzig',
+    'Vienna', 'Zurich', 'Geneva', 'Bern', 'Lausanne', 'Basel',
+    'Brussels', 'Antwerp', 'Ghent', 'Bruges', 'Leuven',
+    'Amsterdam', 'Rotterdam', 'Utrecht', 'The Hague', 'Eindhoven',
+    'Rome', 'Milan', 'Naples', 'Turin', 'Palermo', 'Genoa', 'Bologna', 'Florence', 'Venice',
+    'Madrid', 'Barcelona', 'Valencia', 'Seville', 'Zaragoza', 'Málaga', 'Murcia', 'Palma', 'Bilbao',
+    'Lisbon', 'Porto', 'Coimbra', 'Braga', 'Faro',
+    'Stockholm', 'Gothenburg', 'Malmö', 'Uppsala',
+    'Oslo', 'Bergen', 'Trondheim', 'Stavanger',
+    'Copenhagen', 'Aarhus', 'Odense', 'Aalborg',
+    'Helsinki', 'Tampere', 'Turku', 'Oulu',
+    'Moscow', 'Saint Petersburg', 'Novosibirsk', 'Yekaterinburg', 'Nizhny Novgorod',
+    'Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman',
+    'Singapore', 'Kuala Lumpur', 'Bangkok', 'Jakarta', 'Manila', 'Ho Chi Minh City',
+    'Shanghai', 'Beijing', 'Shenzhen', 'Guangzhou', 'Chengdu', 'Hangzhou', 'Wuhan', 'Nanjing', 'Tianjin', 'Xi\'an',
+    'Hong Kong', 'Taipei', 'Seoul', 'Busan', 'Incheon',
+    'Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Kolkata', 'Pune', 'Ahmedabad', 'Surat',
+    'Cape Town', 'Johannesburg', 'Durban', 'Pretoria',
+    'Cairo', 'Alexandria', 'Giza', 'Luxor',
+    'Nairobi', 'Mombasa', 'Kisumu',
+    'Casablanca', 'Rabat', 'Marrakech', 'Fes', 'Tangier',
+    'Tunis', 'Sfax', 'Sousse',
+    'Algiers', 'Oran', 'Constantine',
+    'Istanbul', 'Ankara', 'Izmir', 'Antalya', 'Bursa',
+    'Athens', 'Thessaloniki', 'Patras', 'Heraklion',
+    'Warsaw', 'Krakow', 'Wroclaw', 'Poznan', 'Gdansk',
+    'Prague', 'Brno', 'Ostrava', 'Plzen',
+    'Budapest', 'Debrecen', 'Szeged', 'Pécs',
+    'Bucharest', 'Cluj-Napoca', 'Timisoara', 'Iasi', 'Constanta',
+    'Sofia', 'Plovdiv', 'Varna', 'Burgas',
+    'Belgrade', 'Novi Sad', 'Niš', 'Subotica',
+    'Zagreb', 'Split', 'Rijeka', 'Osijek',
+    'Ljubljana', 'Maribor', 'Celje',
+    'Sarajevo', 'Banja Luka', 'Tuzla',
+    'Skopje', 'Bitola', 'Kumanovo',
+    'Tirana', 'Durrës', 'Vlore',
+    'Reykjavik', 'Kopavogur', 'Hafnarfjordur',
+    'Monaco', 'Luxembourg', 'Vaduz', 'Andorra la Vella'
+];
+
+// ================================================================
+// APIS - 100% RÉELLES
+// ================================================================
+
+async function geocodeCity(cityName) {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=1&addressdetails=1`;
+    const response = await fetch(url, {
+        headers: { 'User-Agent': 'DroneWeather-App/1.0' }
+    });
+    if (!response.ok) throw new Error('Erreur géocodage');
+    const data = await response.json();
+    if (data.length === 0) throw new Error('Ville non trouvée');
+    return {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon),
+        displayName: data[0].display_name
+    };
+}
+
+async function fetchWeather(lat, lng, days) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,dewpoint_2m,relative_humidity_2m,precipitation,cloud_cover,visibility,wind_speed_10m,wind_gusts_10m&daily=sunrise,sunset&timezone=auto&forecast_days=${days}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Erreur API: ${response.status}`);
+    return await response.json();
+}
+
+async function fetchKp() {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const response = await fetch('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json', {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) return null;
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 1) {
+            const lastRow = data[data.length - 1];
+            const kp = parseFloat(lastRow[1]);
+            if (!isNaN(kp)) return Math.round(Math.min(Math.max(kp, 0), 9) * 100) / 100;
+        }
+        return null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Géolocalisation non supportée'));
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+            (err) => reject(new Error(`Erreur GPS: ${err.message}`)),
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    });
+}
+
+// ================================================================
+// CALCULS
+// ================================================================
+
+function parseSunTimes(data, dayIndex) {
+    if (!data?.daily) return null;
+    const sunrise = new Date(data.daily.sunrise[dayIndex]);
+    const sunset = new Date(data.daily.sunset[dayIndex]);
+    return {
+        sunrise: sunrise.getHours() + sunrise.getMinutes() / 60,
+        sunset: sunset.getHours() + sunset.getMinutes() / 60,
+        dayLength: (sunset - sunrise) / 3600000,
+        sunriseDate: sunrise,
+        sunsetDate: sunset
+    };
+}
+
+function isDayHour(hour, sunTimes) {
+    if (!sunTimes) return true;
+    return hour >= sunTimes.sunrise && hour <= sunTimes.sunset;
+}
+
+function estimateMaxAltitude(windSpeed, gustSpeed) {
+    const base = 120;
+    let reduction = 0;
+    if (windSpeed > 30 || gustSpeed > 40) reduction = 90;
+    else if (windSpeed > 20 || gustSpeed > 30) reduction = 60;
+    else if (windSpeed > 15 || gustSpeed > 25) reduction = 30;
+    else if (windSpeed > 10 || gustSpeed > 15) reduction = 10;
+    let alt = Math.max(0, base - reduction);
+    if (windSpeed > 35 || gustSpeed > 45) alt = 0;
+    return Math.round(alt);
+}
+
+function estimateSats(kp, cloudCover) {
+    let base = 30;
+    const kpLoss = Math.min((kp - 1) * 2, 15);
+    const cloudLoss = Math.min(cloudCover / 10, 10);
+    return Math.round(Math.max(10, base - kpLoss - cloudLoss));
+}
+
+function estimateLocked(sats, kp) {
+    let base = Math.round(sats * 0.85);
+    const kpLoss = Math.min((kp - 1) * 3, 15);
+    return Math.round(Math.max(12, base - kpLoss));
+}
+
+function getCondensationStatus(temp, dewPoint) {
+    if (temp === null || temp === undefined || dewPoint === null || dewPoint === undefined) {
+        return { status: 'unknown', label: '--', diff: null };
+    }
+    const diff = Math.round((temp - dewPoint) * 10) / 10;
+    if (diff < 2) return { status: 'danger', label: '⚠️ Élevé', diff: diff };
+    if (diff < 4) return { status: 'warn', label: '🟠 Modéré', diff: diff };
+    return { status: 'ok', label: '✅ Faible', diff: diff };
+}
+
+// ================================================================
+// CALCUL SCORE AVEC PÉNALITÉ HUMIDITÉ + CONDENSATION
+// ================================================================
+
+function calculateScore(temp, windSpeed, gustSpeed, precipitation, cloudCover, visibility, kp, humidity, dewPoint) {
+    const th = CONFIG.thresholds;
+    let deductions = 0;
+    
+    // ===== VENT (CORRIGÉ) =====
+    // DANGER : vent > 35 OU rafales > 45
+    if (windSpeed > th.maxWindOrange || gustSpeed > th.maxWindOrange + 10) {
+        deductions += 35;
+    }
+    // PRUDENCE : vent > 25 OU rafales > 30
+    else if (windSpeed > th.maxWind || gustSpeed > th.maxGust) {
+        deductions += 20;
+    }
+    // PRUDENCE LÉGÈRE : vent > 20 OU rafales > 25
+    else if (windSpeed > th.maxWind - 5 || gustSpeed > th.maxGust - 5) {
+        deductions += 10;
+    }
+    
+    // ===== PRÉCIPITATIONS =====
+    if (precipitation > th.maxPrecipInt) deductions += 25;
+    else if (precipitation > 0.5) deductions += 12;
+    else if (precipitation > 0.2) deductions += 5;
+    
+    // ===== NUAGES =====
+    if (cloudCover > 85) deductions += 15;
+    else if (cloudCover > th.maxCloud) deductions += 10;
+    else if (cloudCover > th.maxCloud - 15) deductions += 5;
+    
+    // ===== VISIBILITÉ =====
+    if (visibility < th.minVisOrange) deductions += 20;
+    else if (visibility < th.minVis) deductions += 10;
+    else if (visibility < th.minVis + 2) deductions += 5;
+    
+    // ===== KP =====
+    if (kp > th.maxKpOrange) deductions += 25;
+    else if (kp > th.maxKp) deductions += 12;
+    else if (kp > th.maxKp - 0.5) deductions += 5;
+    
+    // ===== HUMIDITÉ + CONDENSATION =====
+    if (humidity !== null && humidity !== undefined) {
+        if (humidity > th.maxHumidityRed) deductions += 25;
+        else if (humidity > th.maxHumidityOrange) deductions += 15;
+        else if (humidity > th.maxHumidity) deductions += 8;
+        
+        if (dewPoint !== null && temp !== null) {
+            const diff = temp - dewPoint;
+            if (diff < 2) deductions += 20;
+            else if (diff < 4) deductions += 10;
+        }
+    }
+    
+    // ===== TEMPÉRATURE =====
+    if (temp !== null) {
+        if (temp > th.maxTemp + 5 || temp < th.minTemp - 5) deductions += 25;
+        else if (temp > th.maxTemp || temp < th.minTemp) deductions += 12;
+        else if (temp > th.maxTemp - 3 || temp < th.minTemp + 3) deductions += 5;
+    }
+    
+    let score = Math.max(0, Math.min(100, 100 - deductions));
+    return Math.round(score);
+}
+
+function getScoreClass(score) {
+    if (score >= 70) return 'green';
+    if (score >= 40) return 'orange';
+    return 'red';
+}
+
+function getStatusFromScore(score) {
+    if (score >= 70) return { text: '✅ OK', class: 'status-ok' };
+    if (score >= 40) return { text: '⚠️ PRUDENCE', class: 'status-warn' };
+    return { text: '⛔ DANGER', class: 'status-danger' };
+}
+
+// ================================================================
+// CALCUL AUTONOMIE BATTERIE
+// ================================================================
+
+function calculateBatteryReal(windSpeed, gustSpeed, temp, humidity, precipitation, baseMinutes) {
+    let factor = 1.0;
+    
+    // Vent
+    if (windSpeed > 10) {
+        const windPenalty = Math.min((windSpeed - 10) * 0.025, 0.35);
+        factor -= windPenalty;
+    }
+    
+    // Rafales
+    if (gustSpeed > 15) {
+        const gustPenalty = Math.min((gustSpeed - 15) * 0.015, 0.20);
+        factor -= gustPenalty;
+    }
+    
+    // Température
+    if (temp < 15) {
+        const coldPenalty = Math.min((15 - temp) * 0.025, 0.30);
+        factor -= coldPenalty;
+    }
+    if (temp < 0) {
+        const freezePenalty = Math.min((0 - temp) * 0.04, 0.25);
+        factor -= freezePenalty;
+    }
+    if (temp > 30) {
+        const heatPenalty = Math.min((temp - 30) * 0.02, 0.20);
+        factor -= heatPenalty;
+    }
+    
+    // Humidité
+    if (humidity !== null && humidity !== undefined) {
+        if (humidity > 80) factor -= 0.08;
+        else if (humidity > 70) factor -= 0.04;
+        else if (humidity > 60) factor -= 0.02;
+    }
+    
+    // Précipitations
+    if (precipitation > 0.5) {
+        const rainPenalty = Math.min(precipitation * 0.06, 0.15);
+        factor -= rainPenalty;
+    }
+    
+    factor = Math.max(0.15, Math.min(1, factor));
+    return Math.round(baseMinutes * factor * 10) / 10;
+}
+
+// ================================================================
+// TRAITEMENT DES DONNÉES
+// ================================================================
+
+function processForecastData(apiData, kp) {
+    if (!apiData?.hourly) return [];
+    
+    const result = [];
+    const hoursPerDay = 24;
+    const totalHours = apiData.hourly.time.length;
+    const days = Math.min(CONFIG.days, Math.floor(totalHours / hoursPerDay));
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    for (let d = 0; d < days; d++) {
+        const dayOffset = d * hoursPerDay;
+        const dateStr = new Date(apiData.hourly.time[dayOffset]).toLocaleDateString('fr-FR', { 
+            weekday: 'long', day: 'numeric', month: 'short' 
+        });
+        const sunTimes = parseSunTimes(apiData, d);
+        
+        const hours = [];
+        for (let h = 0; h < hoursPerDay; h++) {
+            const idx = dayOffset + h;
+            if (idx >= apiData.hourly.time.length) break;
+            
+            const hour = new Date(apiData.hourly.time[idx]).getHours();
+            const isDay = isDayHour(hour, sunTimes);
+            
+            if (!isDay) continue;
+            
+            let isPast = false;
+            if (d === 0) {
+                isPast = hour < currentHour;
+            }
+            
+            const temp = Math.round(apiData.hourly.temperature_2m[idx] * 10) / 10;
+            const dew = Math.round(apiData.hourly.dewpoint_2m[idx] * 10) / 10;
+            const humidity = Math.round(apiData.hourly.relative_humidity_2m[idx]);
+            const wind = Math.round(apiData.hourly.wind_speed_10m[idx] * 10) / 10;
+            const gust = Math.round(apiData.hourly.wind_gusts_10m[idx] * 10) / 10;
+            const precip = Math.round(apiData.hourly.precipitation[idx] * 100) / 100;
+            const cloud = Math.round(apiData.hourly.cloud_cover[idx]);
+            const visibility = Math.round(apiData.hourly.visibility[idx] / 1000 * 10) / 10;
+            
+            const maxAlt = estimateMaxAltitude(wind, gust);
+            const sats = estimateSats(kp, cloud);
+            const locked = estimateLocked(sats, kp);
+            const battery = calculateBatteryReal(wind, gust, temp, humidity, precip, CONFIG.batteryBase);
+            const cond = getCondensationStatus(temp, dew);
+            const score = calculateScore(temp, wind, gust, precip, cloud, visibility, kp, humidity, dew);
+            
+            hours.push({
+                hour: hour,
+                temp: temp,
+                dew: dew,
+                wind: wind,
+                gust: gust,
+                precip: precip,
+                cloud: cloud,
+                visibility: visibility,
+                humidity: humidity,
+                maxAlt: maxAlt,
+                sats: sats,
+                locked: locked,
+                kp: kp,
+                battery: battery,
+                condensation: cond,
+                score: score,
+                isDay: isDay,
+                isPast: isPast
+            });
+        }
+        
+        result.push({
+            dateStr: dateStr,
+            sunTimes: sunTimes,
+            hours: hours
+        });
+    }
+    return result;
+}
+
+// ================================================================
+// AFFICHAGE
+// ================================================================
+
+function updateDisplay() {
+    if (!processedData || processedData.length === 0) {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="15" class="no-data">📡 Aucune donnée disponible</td></tr>';
+        return;
+    }
+    
+    if (selectedDayIndex >= processedData.length) selectedDayIndex = processedData.length - 1;
+    if (selectedDayIndex < 0) selectedDayIndex = 0;
+    
+    const day = processedData[selectedDayIndex];
+    if (!day || day.hours.length === 0) {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="15" class="no-data">🌙 Aucune heure de jour disponible</td></tr>';
+        document.getElementById('dayLabel').textContent = day?.dateStr || 'Aucun jour';
+        return;
+    }
+    
+    // Label du jour
+    const date = new Date(day.sunTimes?.sunriseDate || Date.now());
+    const options = { weekday: 'long', day: 'numeric', month: 'long' };
+    let text = date.toLocaleDateString('fr', options);
+    if (selectedDayIndex === 0) text = '📌 AUJOURD\'HUI - ' + text;
+    document.getElementById('dayLabel').textContent = text;
+    document.getElementById('dayCount').textContent = `(${day.hours.length}h de vol)`;
+    
+    // Sun info
+    const info = document.getElementById('sunInfo');
+    const cityDisplay = currentCity || 'Position actuelle';
+    if (day.sunTimes) {
+        const s = day.sunTimes;
+        const sunrise = Math.floor(s.sunrise);
+        const sunset = Math.floor(s.sunset);
+        const srMin = Math.round((s.sunrise - sunrise) * 60);
+        const ssMin = Math.round((s.sunset - sunset) * 60);
+        const avgScore = day.hours.length > 0 ? Math.round(day.hours.reduce((sum, h) => sum + h.score, 0) / day.hours.length) : 0;
+        const scoreColor = avgScore >= 70 ? '#00d4a0' : avgScore >= 40 ? '#f5a623' : '#ff4757';
+        info.innerHTML = `
+            <span>📍 ${cityDisplay}</span>
+            <span>📅 ${day.dateStr}</span>
+            <span>🌅 Lever: ${String(sunrise).padStart(2,'0')}h${String(srMin).padStart(2,'0')}</span>
+            <span>🌇 Coucher: ${String(sunset).padStart(2,'0')}h${String(ssMin).padStart(2,'0')}</span>
+            <span>☀️ Durée: ${Math.floor(s.dayLength)}h${Math.round((s.dayLength % 1) * 60)}min</span>
+    `;
+    }
+    
+    // Tableau
+    const th = CONFIG.thresholds;
+    const batteryBase = CONFIG.batteryBase;
+    let html = '';
+    
+    day.hours.forEach(h => {
+        const batteryPercent = Math.min(100, (h.battery / batteryBase) * 100);
+        const batteryColor = batteryPercent > 60 ? '#3a8a5a' : batteryPercent > 30 ? '#b88a3a' : '#9a4a4a';
+        const batteryDisplay = `
+            <span class="battery-bar"><span class="fill" style="width:${batteryPercent}%;background:${batteryColor};"></span></span>
+            <span class="battery-text">${h.battery}min</span>
+        `;
+        
+        const scoreClass = getScoreClass(h.score);
+        const status = getStatusFromScore(h.score);
+        const condClass = h.condensation.status === 'ok' ? 'condensation-ok' : h.condensation.status === 'warn' ? 'condensation-warn' : 'condensation-danger';
+        const altClass = h.maxAlt > 80 ? 'altitude-ok' : h.maxAlt > 30 ? 'altitude-warn' : 'altitude-danger';
+        const rowClass = h.isPast ? 'hour-row past' : 'hour-row';
+        const currentClass = (!h.isPast && selectedDayIndex === 0) ? 'current' : '';
+        
+        const windClass = getStatusClass(h.wind, 0, th.maxWind, false, true);
+        const gustClass = getStatusClass(h.gust, 0, th.maxGust, false, true);
+        const tempClass = getStatusClass(h.temp, th.minTemp, th.maxTemp, false, false);
+        const humidClass = getStatusClass(h.humidity, 0, th.maxHumidity, false, true);
+        const cloudClass = getStatusClass(h.cloud, 0, th.maxCloud, false, true);
+        const visClass = getStatusClass(h.visibility, th.minVis, 50, true, false);
+        const kpClass = getStatusClass(h.kp, 0, th.maxKp, false, true);
+        const satsClass = getStatusClass(h.sats, 10, 30, true, false);
+        const lockedClass = getStatusClass(h.locked, th.minLocked, 40, true, false);
+        
+        const sunIcon = h.hour >= 6 && h.hour < 8 ? '🌅' : h.hour >= 8 && h.hour < 17 ? '☀️' : '🌇';
+        const pastLabel = h.isPast ? ' ⏳' : '';
+        const precipDisplay = h.precip > 0 ? h.precip + ' mm' : '-';
+        
+        html += `<tr class="${rowClass} ${currentClass}">
+            <td><strong>${String(h.hour).padStart(2,'0')}:00</strong> ${sunIcon}${pastLabel}</td>
+            <td class="${tempClass}">${h.temp}°</td>
+            <td class="${condClass}">${h.dew}°</td>
+            <td class="${windClass}">${h.wind}</td>
+            <td class="${gustClass}">${h.gust}</td>
+            <td class="${altClass} altitude-max">${h.maxAlt > 0 ? h.maxAlt + 'm' : '⛔'}</td>
+            <td>${precipDisplay}</td>
+            <td class="${cloudClass}">${h.cloud}%</td>
+            <td class="${humidClass}">${h.humidity}%</td>
+            <td class="${kpClass}">${h.kp}</td>
+            <td class="${satsClass}">${h.sats}</td>
+            <td class="${lockedClass}">${h.locked}</td>
+            <td style="font-size:clamp(9px,0.8vw,13px);">${batteryDisplay}</td>
+            <td><span class="score-badge ${scoreClass}">${h.score}%</span></td>
+            <td><span class="badge ${status.class}">${status.text}</span></td>
+        </tr>`;
+    });
+    
+    document.getElementById('tableBody').innerHTML = html;
+}
+
+function getStatusClass(value, thresholdLow, thresholdHigh, invertLow = false, invertHigh = false) {
+    if (value === undefined || value === null) return 'cell-ok';
+    let color = 'cell-ok';
+    if (!invertLow && !invertHigh) {
+        if (value < thresholdLow) color = 'cell-danger';
+        else if (value > thresholdHigh) color = 'cell-danger';
+        else if (value < thresholdLow + (thresholdHigh - thresholdLow) * 0.3) color = 'cell-warn';
+        else if (value > thresholdHigh - (thresholdHigh - thresholdLow) * 0.3) color = 'cell-warn';
+    } else if (invertLow) {
+        if (value < thresholdLow) color = 'cell-danger';
+        else if (value < thresholdLow * 1.5) color = 'cell-warn';
+    } else if (invertHigh) {
+        if (value > thresholdHigh) color = 'cell-danger';
+        else if (value > thresholdHigh * 0.7) color = 'cell-warn';
+    }
+    return color;
+}
+
+// ================================================================
+// CHARGEMENT
+// ================================================================
+
+async function loadAllData() {
+    if (isLoading) return;
+    isLoading = true;
+    
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="15" class="no-data"><span class="loading-spinner"></span> Chargement Open-Meteo + NOAA KP...</td></tr>';
+    document.getElementById('dayLabel').textContent = '⏳ Chargement...';
+    
+    try {
+        const kp = await fetchKp() || 2;
+        const weatherData = await fetchWeather(currentLat, currentLng, CONFIG.days);
+        processedData = processForecastData(weatherData, kp);
+        selectedDayIndex = 0;
+        updateDisplay();
+        document.getElementById('locationStatus').textContent = '✅ ' + currentCity + ' · KP=' + kp;
+    } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('tableBody').innerHTML = `
+            <tr><td colspan="15" class="no-data" style="color:#e89a8a;">
+                ❌ ${error.message}<br>
+                <small style="color:#5a7a8a;">Vérifie ta connexion Internet</small>
+            </td></tr>
+        `;
+        document.getElementById('locationStatus').textContent = '❌ Erreur';
+    }
+    
+    isLoading = false;
+}
+
+// ================================================================
+// NAVIGATION
+// ================================================================
+
+function goToPrevDay() {
+    if (selectedDayIndex > 0) {
+        selectedDayIndex--;
+        updateDisplay();
+    }
+}
+
+function goToNextDay() {
+    if (selectedDayIndex < processedData.length - 1) {
+        selectedDayIndex++;
+        updateDisplay();
+    }
+}
+
+// ================================================================
+// RECHERCHE ET POSITION
+// ================================================================
+
+async function searchCity(cityName) {
+    if (!cityName.trim()) {
+        document.getElementById('locationStatus').textContent = '⚠️ Entrez une ville';
+        return;
+    }
+    document.getElementById('locationStatus').textContent = '🔍 Recherche...';
+    try {
+        const result = await geocodeCity(cityName);
+        currentLat = result.lat;
+        currentLng = result.lng;
+        currentCity = cityName;
+        document.getElementById('citySearch').value = cityName;
+        localStorage.setItem('droneWeather_city', cityName);
+        await loadAllData();
+    } catch (error) {
+        document.getElementById('locationStatus').textContent = '❌ ' + error.message;
+    }
+}
+
+async function useCurrentPosition() {
+    document.getElementById('locationStatus').textContent = '📍 Position GPS...';
+    try {
+        const pos = await getCurrentPosition();
+        currentLat = pos.lat;
+        currentLng = pos.lng;
+        currentCity = 'Ma position (GPS)';
+        await loadAllData();
+        document.getElementById('citySearch').value = 'Ma position (GPS)';
+        localStorage.setItem('droneWeather_city', 'Ma position (GPS)');
+    } catch (error) {
+        document.getElementById('locationStatus').textContent = '❌ ' + error.message;
+    }
+}
+
+// ================================================================
+// AUTOCOMPLÉTION
+// ================================================================
+
+function showSuggestions(query) {
+    const container = document.getElementById('suggestions');
+    if (!query || query.length < 2) {
+        container.style.display = 'none';
+        return;
+    }
+    const filtered = CITIES.filter(c => 
+        c.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 10);
+    if (filtered.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    container.innerHTML = '';
+    filtered.forEach(city => {
+        const div = document.createElement('div');
+        div.textContent = city;
+        div.onclick = () => {
+            document.getElementById('citySearch').value = city;
+            container.style.display = 'none';
+            searchCity(city);
+        };
+        container.appendChild(div);
+    });
+    container.style.display = 'block';
+}
+
+// ================================================================
+// INTERACTIONS AVEC SAUVEGARDE AUTO
+// ================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Charger les seuils sauvegardés ---
+    loadThresholds();
+    loadBatteryBase();
+    loadDays();
+    const cityLoaded = loadCity();
+    
+    // --- Recherche ---
+    document.getElementById('searchCityBtn').addEventListener('click', () => {
+        const city = document.getElementById('citySearch').value.trim();
+        if (city) {
+            searchCity(city);
+        }
+    });
+    
+    document.getElementById('citySearch').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const city = document.getElementById('citySearch').value.trim();
+            if (city) searchCity(city);
+            document.getElementById('suggestions').style.display = 'none';
+        } else {
+            showSuggestions(e.target.value);
+        }
+    });
+    
+    document.getElementById('citySearch').addEventListener('blur', () => {
+        setTimeout(() => {
+            document.getElementById('suggestions').style.display = 'none';
+        }, 200);
+    });
+    
+    document.getElementById('citySearch').addEventListener('change', (e) => {
+        localStorage.setItem('droneWeather_city', e.target.value);
+    });
+    
+    // --- POSITION GPS (CORRIGÉ) ---
+    document.getElementById('locationBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        useCurrentPosition();
+    });
+    
+    // --- Autonomie ---
+    document.getElementById('batteryBase').addEventListener('change', (e) => {
+        CONFIG.batteryBase = parseInt(e.target.value) || 21;
+        localStorage.setItem('droneWeather_batteryBase', CONFIG.batteryBase);
+        if (processedData.length > 0) {
+            processedData = processedData.map(day => ({
+                ...day,
+                hours: day.hours.map(h => ({
+                    ...h,
+                    battery: calculateBatteryReal(h.wind, h.gust, h.temp, h.humidity, h.precip, CONFIG.batteryBase)
+                }))
+            }));
+            updateDisplay();
+        }
+    });
+    
+    // --- Jours ---
+    document.getElementById('forecastDays').addEventListener('change', () => {
+        CONFIG.days = parseInt(document.getElementById('forecastDays').value);
+        localStorage.setItem('droneWeather_days', CONFIG.days);
+        loadAllData();
+    });
+    
+    // --- Navigation jours ---
+    document.getElementById('prevDayBtn').addEventListener('click', goToPrevDay);
+    document.getElementById('nextDayBtn').addEventListener('click', goToNextDay);
+    
+    // --- Rafraîchir ---
+    document.getElementById('refreshBtn').addEventListener('click', loadAllData);
+    
+    // --- Seuils (avec sauvegarde) ---
+    document.getElementById('toggleSettings').addEventListener('click', () => {
+        document.getElementById('settingsPanel').classList.toggle('open');
+    });
+    
+    document.getElementById('applySettingsBtn').addEventListener('click', () => {
+        const th = CONFIG.thresholds;
+        th.maxWind = parseFloat(document.getElementById('maxWind').value) || 25;
+        th.maxWindOrange = parseFloat(document.getElementById('maxWindOrange').value) || 35;
+        th.maxGust = parseFloat(document.getElementById('maxGust').value) || 30;
+        th.minTemp = parseFloat(document.getElementById('minTemp').value) || 0;
+        th.maxTemp = parseFloat(document.getElementById('maxTemp').value) || 35;
+        th.maxHumidity = parseFloat(document.getElementById('maxHumidity').value) || 70;
+        th.maxHumidityOrange = parseFloat(document.getElementById('maxHumidityOrange').value) || 80;
+        th.maxHumidityRed = parseFloat(document.getElementById('maxHumidityRed').value) || 85;
+        th.maxPrecipProb = parseFloat(document.getElementById('maxPrecipProb').value) || 40;
+        th.maxPrecipInt = parseFloat(document.getElementById('maxPrecipInt').value) || 2.5;
+        th.maxCloud = parseFloat(document.getElementById('maxCloud').value) || 75;
+        th.minVis = parseFloat(document.getElementById('minVis').value) || 8;
+        th.minVisOrange = parseFloat(document.getElementById('minVisOrange').value) || 5;
+        th.maxKp = parseFloat(document.getElementById('maxKp').value) || 4;
+        th.maxKpOrange = parseFloat(document.getElementById('maxKpOrange').value) || 6;
+        th.minLocked = parseInt(document.getElementById('minLocked').value) || 13;
+        th.minCloudBase = parseFloat(document.getElementById('minCloudBase').value) || 305;
+        
+        // Sauvegarde
+        saveThresholds(th);
+        
+        // Recalcul des scores
+        if (processedData.length > 0) {
+            processedData = processedData.map(day => ({
+                ...day,
+                hours: day.hours.map(h => ({
+                    ...h,
+                    score: calculateScore(h.temp, h.wind, h.gust, h.precip, h.cloud, h.visibility, h.kp, h.humidity, h.dew)
+                }))
+            }));
+            updateDisplay();
+        }
+        document.getElementById('locationStatus').textContent = '✅ Seuils sauvegardés';
+    });
+    
+    // --- Aide ---
+    document.getElementById('helpBtn').addEventListener('click', () => {
+        document.getElementById('helpModal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    document.getElementById('helpModalClose').addEventListener('click', () => {
+        document.getElementById('helpModal').classList.remove('open');
+        document.body.style.overflow = '';
+    });
+    
+    document.getElementById('helpModal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+            document.getElementById('helpModal').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+    });
+    
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            document.getElementById('helpModal').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        if (e.key === 'ArrowLeft') goToPrevDay();
+        if (e.key === 'ArrowRight') goToNextDay();
+    });
+    
+    // --- Chargement initial ---
+    if (cityLoaded) {
+        searchCity(cityLoaded);
+    } else {
+        loadAllData();
+    }
+});
+
+// Rafraîchissement automatique toutes les 15 minutes
+setInterval(loadAllData, 900000);
+</script>
+</body>
+</html>
