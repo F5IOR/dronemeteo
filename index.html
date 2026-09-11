@@ -3,26 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🚁 DroneWeather - Données Réelles</title>
-    <!-- ===== FONT AWESOME POUR LES ICÔNES ===== -->
+    <title>DroneMétéo - Données Réelles</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         /* ===== STYLES ===== */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
         body { background: #0f1e2e; color: #dce8f0; padding: 10px; display: flex; justify-content: center; min-height: 100vh; }
         .app { max-width: 1500px; width: 100%; }
-        
+
         .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
-        .title { font-size: clamp(20px, 4vw, 30px); font-weight: bold; color: #6bb5e8; }
+        .title { font-size: clamp(20px, 4vw, 30px); font-weight: bold; color: #6bb5e8; display: flex; align-items: center; }
         .title span { color: #f0b34b; }
-        .title .badge-api { font-size: clamp(10px, 1.2vw, 14px); background: #1a5a3a; padding: 2px 12px; border-radius: 20px; color: #8dca9d; margin-left: 8px; display: inline-block; }
-        
+
         .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .btn-help { background: #3a5a7a; border: none; color: #dce8f0; padding: 5px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: clamp(12px, 1.2vw, 15px); }
         .btn-help:hover { background: #4a7a9a; }
-        .btn-airops { background: #5a3a3a; border: none; color: #dce8f0; padding: 5px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: clamp(12px, 1.2vw, 15px); text-decoration: none; display: inline-block; }
-        .btn-airops:hover { background: #7a4a4a; }
-        
         .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #142b40; padding: 8px 14px; border-radius: 10px; width: 100%; }
         .controls label { font-size: clamp(12px, 1.2vw, 15px); display: flex; align-items: center; gap: 4px; }
         .controls select, .controls input { background: #1a3550; border: 1px solid #2a4a6a; color: #dce8f0; padding: 4px 8px; border-radius: 5px; font-size: clamp(12px, 1.2vw, 15px); }
@@ -34,76 +30,103 @@
         .btn-success:hover { background: #2a8a4a; }
         .btn-location { background: #5a4a7a; }
         .btn-location:hover { background: #7a5a9a; }
-        
+
         .search-container { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
         .search-wrapper { position: relative; display: inline-block; }
         .location-status { font-size: clamp(11px, 1vw, 13px); color: #5a8a7a; margin-left: 4px; }
-        
+
         .settings-panel { background: #102535; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; border: 1px solid #1a3a55; display: none; }
         .settings-panel.open { display: block; }
         .settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px 14px; }
         .settings-grid label { font-size: clamp(11px, 1.1vw, 14px); display: flex; align-items: center; gap: 6px; justify-content: space-between; }
         .settings-grid input { width: 60px; background: #1a3550; border: 1px solid #2a4a6a; color: #dce8f0; padding: 3px 6px; border-radius: 4px; font-size: clamp(11px, 1.1vw, 14px); }
         .toggle-settings { cursor: pointer; color: #6bb5e8; text-decoration: underline; font-size: clamp(12px, 1.2vw, 15px); }
-        
+
         .day-navigation { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
         .day-navigation button { background: #1a3550; border: 1px solid #2a4a6a; color: #dce8f0; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 14px; transition: 0.2s; }
         .day-navigation button:hover { background: #2a4a6a; }
         .day-label { font-size: clamp(13px, 1.2vw, 16px); font-weight: 700; color: #6bb5e8; min-width: 200px; text-align: center; }
-        
-        .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: clamp(12px, 1.1vw, 14px); margin: 4px 0 10px 0; }
-        .legend span { display: flex; align-items: center; gap: 5px; }
-        .legend .dot { width: 14px; height: 14px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
-        .legend .dot.green { background: #3a8a5a; }
-        .legend .dot.orange { background: #b88a3a; }
-        .legend .dot.red { background: #9a4a4a; }
-        
+
         .table-wrap { overflow-x: auto; background: #0a1825; border-radius: 10px; padding: 4px; border: 1px solid #1a3050; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; font-size: clamp(11px, 1vw, 14px); min-width: 925px; }
-        th { background: #102535; color: #8ab8d8; padding: 8px 4px; text-align: center; border-bottom: 2px solid #1a3a55; white-space: nowrap; font-size: clamp(10px, 0.9vw, 13px); font-weight: 700; }
-        td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #152a40; white-space: nowrap; font-size: clamp(11px, 1vw, 14px); }
+        table { width: 100%; border-collapse: collapse; font-size: clamp(10px, 0.9vw, 13px); min-width: 925px; }
+        th { background: #102535; color: #8ab8d8; padding: 5px 6px; text-align: center; border-bottom: 2px solid #fff; border-right: 1px solid #fff; white-space: nowrap; font-size: clamp(9px, 0.8vw, 12px); font-weight: 700; }
+        th:last-child { border-right: none; }
+        td { padding: 3px 6px; text-align: center; border-bottom: 1px solid #fff; border-right: 1px solid #fff; white-space: nowrap; font-size: clamp(13px, 0.9vw, 13px); }
+        td:last-child { border-right: none; }
         .hour-row { background: #0e1f30; }
         .hour-row:hover { background: #162a40; }
         .hour-row.current { background: rgba(0,212,255,0.08); }
         .hour-row.past { opacity: 0.45; }
-        
+
         .status-ok { background: #063; color: #8dca9d; font-weight: 700; border-radius: 3px; padding: 2px 8px; font-size: clamp(10px, 0.9vw, 13px); }
         .status-warn { background: #ee7024; color: #e8d86a; font-weight: 700; border-radius: 3px; padding: 2px 8px; font-size: clamp(10px, 0.9vw, 13px); }
         .status-danger { background: #7a3a3a; color: #e89a8a; font-weight: 700; border-radius: 3px; padding: 2px 8px; font-size: clamp(10px, 0.9vw, 13px); }
-        
-        .cell-ok { background: rgb(44 112 44); color: #dee7e1; border-radius: 3px; padding: 2px 5px; font-weight: 600; }
-        .cell-warn { background: rgb(213 84 41); color: #dee7e1; border-radius: 3px; padding: 2px 5px; font-weight: 600; }
-        .cell-danger { background: rgb(133 54 52); color: #dee7e1; border-radius: 3px; padding: 2px 5px; font-weight: 600; }
-        
+
+        .cell-ok { background: rgba(93, 162, 54, 0.43); color: #dee7e1; border-radius: 3px; padding: 2px 5px; font-weight: 600; }
+        .cell-warn { background: rgba(255, 131, 0, 0.51); color: #dee7e1; border-radius: 3px; padding: 2px 5px; font-weight: 600; }
+        .cell-danger { background: rgba(255, 98, 94, 0.47); color: #dee7e1; border-radius: 3px; padding: 2px 5px; font-weight: 600; }
+
         .badge { display: inline-block; padding: 2px 10px; border-radius: 14px; font-size: clamp(10px, 0.9vw, 13px); font-weight: 700; }
         .battery-bar { display: inline-block; width: clamp(30px, 4vw, 44px); height: 7px; background: #1a2a3a; border-radius: 3px; overflow: hidden; margin-right: 4px; vertical-align: middle; }
         .battery-bar .fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
-        .battery-text { font-size: clamp(10px, 0.9vw, 13px); font-weight: 700; }
-        
+        .battery-text { font-size: clamp(13px, 0.9vw, 13px); font-weight: 700; }
+
         .score-badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: clamp(11px, 1vw, 14px); font-weight: 700; min-width: 40px; }
         .score-badge.green { background: rgba(0,212,160,0.25); color: #00d4a0; }
         .score-badge.orange { background: rgba(245,166,35,0.25); color: #f5a623; }
         .score-badge.red { background: rgba(255,71,87,0.25); color: #ff4757; }
-        
+
         .altitude-max { font-weight: 600; }
         .altitude-ok { color: #00d4a0; }
         .altitude-warn { color: #f5a623; }
         .altitude-danger { color: #ff4757; }
-        
+
         .condensation-ok { color: #00d4a0; }
         .condensation-warn { color: #f5a623; }
         .condensation-danger { color: #ff4757; }
-        
+
         .suggestions { position: absolute; background: #1a3550; border: 1px solid #2a4a6a; border-radius: 6px; max-height: 180px; overflow-y: auto; z-index: 100; width: 100%; min-width: 150px; display: none; }
         .suggestions div { padding: 6px 12px; cursor: pointer; font-size: clamp(12px, 1.1vw, 14px); color: #dce8f0; }
         .suggestions div:hover { background: #2a4a6a; }
-        
+
         .footer { margin-top: 12px; font-size: clamp(10px, 0.8vw, 12px); color: #5a7a8a; text-align: center; border-top: 1px solid #1a3050; padding-top: 10px; }
-        .sun-info { font-size: clamp(12px, 1.1vw, 14px); color: #7aaac8; margin: 4px 0 8px 0; }
+        .sun-info { font-size: clamp(14px, 1.1vw, 14px); color: #7aaac8; margin: 4px 0 8px 0; }
         .sun-info span { margin-right: 12px; display: inline-block; }
         .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #2a5a7a; border-top-color: #6bb5e8; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .no-data { padding: 25px; text-align: center; color: #5a7a8a; font-size: clamp(13px, 1.2vw, 16px); }
+
+        /* ===== CARTE ===== */
+        .map-container { background: #102535; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; border: 1px solid #1a3a55; }
+        .map-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        .map-title { font-size: clamp(14px, 1.3vw, 18px); font-weight: 700; color: #6bb5e8; display: flex; align-items: center; gap: 8px; }
+        .map-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+        .map-btn { padding: 5px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: clamp(11px, 1vw, 13px); transition: 0.2s; border: none; white-space: nowrap; }
+        .map-btn-primary { background: #2a5a7a; color: #dce8f0; }
+        .map-btn-primary:hover { background: #3a7a9a; }
+        .map-btn-secondary { background: #3a5a3a; color: #dce8f0; }
+        .map-btn-secondary:hover { background: #4a7a4a; }
+        .map-btn-airops { background: #5a3a3a; color: #dce8f0; }
+        .map-btn-airops:hover { background: #7a4a4a; }
+        #map { height: 400px; width: 100%; border-radius: 8px; border: 1px solid #1a3a55; z-index: 1; }
+        .map-info { margin-top: 10px; padding: 10px 14px; border-radius: 8px; font-size: clamp(11px, 1vw, 13px); display: flex; align-items: flex-start; gap: 10px; }
+        .map-info-warning { background: rgba(245, 166, 35, 0.15); border-left: 4px solid #f5a623; color: #e8d8a0; }
+        .map-info-globe { background: rgba(107, 181, 232, 0.12); border-left: 4px solid #6bb5e8; color: #a0d0e8; }
+
+        /* Marqueur drone */
+        .drone-marker { background: transparent !important; border: none !important; }
+        .drone-marker > div {
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+            background: #6bb5e8;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
 
         /* ===== MODAL AIDE ===== */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
@@ -131,7 +154,7 @@
         @media (max-width: 768px) {
             body { padding: 6px; }
             .header { flex-direction: column; align-items: stretch; gap: 8px; }
-            .title { text-align: center; font-size: 22px; }
+            .title { text-align: center; font-size: 22px; justify-content: center; }
             .header-right { justify-content: center; }
             .controls { flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 8px 10px; gap: 6px; }
             .controls label { font-size: 12px; }
@@ -145,21 +168,22 @@
             .settings-grid label { font-size: 11px; }
             .settings-grid input { width: 50px; font-size: 11px; }
             .day-label { min-width: 120px; font-size: 12px; }
-            .legend { font-size: 11px; gap: 10px; }
-            .legend .dot { width: 12px; height: 12px; }
             .sun-info span { display: block; margin-right: 0; margin-bottom: 2px; }
             table { min-width: 800px; font-size: 11px; }
-            th { font-size: 9px; padding: 4px 2px; }
-            td { font-size: 10px; padding: 4px 2px; }
-            .cell-ok, .cell-warn, .cell-danger { padding: 1px 3px; font-size: 10px; }
+            th { font-size: 9px; padding: 4px 3px; }
+            td { font-size: 14px; padding: 3px 3px; }
+            .cell-ok, .cell-warn, .cell-danger { padding: 1px 3px; font-size: 14px; }
             .status-ok, .status-warn, .status-danger { font-size: 9px; padding: 1px 5px; }
-            .badge { font-size: 9px; padding: 1px 6px; }
+            .badge { font-size: 11px; padding: 1px 6px; }
             .battery-bar { width: 28px; height: 6px; }
-            .battery-text { font-size: 9px; }
+            .battery-text { font-size: 13px; }
             .modal { padding: 15px; }
             .modal h2 { font-size: 20px; }
             .modal table { font-size: 11px; }
             .modal th, .modal td { font-size: 10px; padding: 4px 6px; }
+            #map { height: 300px; }
+            .map-header { flex-direction: column; align-items: flex-start; }
+            .map-controls { width: 100%; }
         }
 
         @media (max-width: 480px) {
@@ -174,14 +198,13 @@
             .search-container .btn { flex: 1; min-width: 60px; font-size: 11px; padding: 3px 8px; }
             .btn { font-size: 11px; padding: 3px 8px; }
             .day-label { min-width: 80px; font-size: 11px; }
-            .legend { font-size: 10px; gap: 6px; }
             .settings-grid { grid-template-columns: 1fr 1fr; gap: 3px 8px; }
             .settings-grid label { font-size: 10px; }
             .settings-grid input { width: 45px; font-size: 10px; }
             .table-wrap { padding: 2px; border-radius: 6px; }
             table { min-width: 600px; font-size: 9px; }
-            th { font-size: 8px; padding: 3px 1px; }
-            td { font-size: 9px; padding: 3px 1px; }
+            th { font-size: 8px; padding: 3px 2px; }
+            td { font-size: 9px; padding: 2px 2px; }
             .cell-ok, .cell-warn, .cell-danger { padding: 1px 2px; font-size: 8px; }
             .status-ok, .status-warn, .status-danger { font-size: 8px; padding: 1px 4px; }
             .badge { font-size: 8px; padding: 1px 4px; }
@@ -194,6 +217,9 @@
             .modal h2 { font-size: 17px; }
             .modal table { font-size: 10px; }
             .modal th, .modal td { font-size: 9px; padding: 3px 4px; }
+            #map { height: 250px; }
+            .map-controls { flex-direction: column; }
+            .map-btn { width: 100%; text-align: center; }
         }
 
         ::-webkit-scrollbar { height: 6px; background: #0a1825; }
@@ -207,11 +233,20 @@
     <!-- HEADER -->
     <div class="header">
         <div class="title">
-            <img src="drone.png" alt="Drone" style="height: 1.2em; vertical-align: middle; margin-right: 4px;"> Drone<span>Météo</span>
-            
+            <svg width="32" height="32" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 8px;">
+                <rect x="10" y="10" width="4" height="4" rx="0.5" fill="#f0b34b"/>
+                <circle cx="6" cy="6" r="2" fill="none" stroke="#6bb5e8" stroke-width="1.5"/>
+                <circle cx="18" cy="6" r="2" fill="none" stroke="#6bb5e8" stroke-width="1.5"/>
+                <circle cx="6" cy="18" r="2" fill="none" stroke="#6bb5e8" stroke-width="1.5"/>
+                <circle cx="18" cy="18" r="2" fill="none" stroke="#6bb5e8" stroke-width="1.5"/>
+                <line x1="7" y1="7" x2="10" y2="10" stroke="#6bb5e8" stroke-width="1.5"/>
+                <line x1="17" y1="7" x2="14" y2="10" stroke="#6bb5e8" stroke-width="1.5"/>
+                <line x1="7" y1="17" x2="10" y2="14" stroke="#6bb5e8" stroke-width="1.5"/>
+                <line x1="17" y1="17" x2="14" y2="14" stroke="#6bb5e8" stroke-width="1.5"/>
+            </svg>
+            Drone<span>Météo</span>
         </div>
         <div class="header-right">
-            <a href="https://airops-supuav.fr/map/#5.05/46.49/3.95" target="_blank" class="btn-airops">🛩️ Airops-SUPUAV</a>
             <button class="btn-help" id="helpBtn">❓ Aide</button>
         </div>
     </div>
@@ -269,6 +304,34 @@
         </div>
     </div>
 
+    <!-- CARTE -->
+    <div class="map-container">
+        <div class="map-header">
+            <div class="map-title">
+                <i class="fas fa-map"></i> Carte de vol
+            </div>
+            <div class="map-controls">
+                <button class="map-btn map-btn-primary" id="mapRecenterBtn">
+                    <i class="fas fa-crosshairs"></i> Recentrer
+                </button>
+                <button class="map-btn map-btn-secondary" id="mapToggleRestrictionsBtn">
+                    <i class="fas fa-exclamation-triangle"></i> Zones permanentes
+                </button>
+                <button class="map-btn map-btn-airops" id="mapAiropsBtn">
+                    <i class="fas fa-plane"></i> Restrictions Airops
+                </button>
+            </div>
+        </div>
+        <div id="map"></div>
+        <div class="map-info map-info-warning" id="mapInfo">
+            <i class="fas fa-info-circle" style="margin-top:2px;"></i>
+            <div>
+                <strong>⚠️ Info :</strong> La couche Géoportail n'affiche que les zones <strong>permanentes</strong>. 
+                Pour les NOTAM, SUP-AIP et arrêtés municipaux, cliquez sur <strong>"Restrictions Airops"</strong>.
+            </div>
+        </div>
+    </div>
+
     <!-- SUN INFO -->
     <div class="sun-info" id="sunInfo">🌤️ Chargement des données...</div>
 
@@ -277,10 +340,7 @@
         <button id="prevDayBtn"><i class="fas fa-chevron-left"></i></button>
         <span class="day-label" id="dayLabel">Aujourd'hui</span>
         <button id="nextDayBtn"><i class="fas fa-chevron-right"></i></button>
-        <span style="margin-left:auto; font-size:clamp(11px,1vw,13px); color:#5a7a8a;" id="dayCount"></span>
     </div>
-
-
 
     <!-- TABLE -->
     <div class="table-wrap">
@@ -317,7 +377,7 @@
     <div class="modal">
         <button class="modal-close" id="helpModalClose">&times;</button>
         <h2>📘 Guide des conditions de vol drone</h2>
-        
+
         <h3>🌡️ Conditions météo et impact sur le vol</h3>
         <table>
             <thead><tr><th>Paramètre</th><th>🟢 OK</th><th>🟠 Prudence</th><th>🔴 Dangereux</th></tr></thead>
@@ -393,6 +453,7 @@
     </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ================================================================
 // CONFIGURATION
@@ -404,6 +465,7 @@ const CONFIG = {
     days: 3,
     batteryBase: 21,
     cityName: 'La Motte Saint Jean',
+    timezone: 'Europe/Paris',
     thresholds: {
         maxWind: 25, maxWindOrange: 35, maxGust: 30,
         minTemp: 0, maxTemp: 35,
@@ -422,6 +484,38 @@ let currentCity = 'La Motte Saint Jean';
 let currentLat = CONFIG.lat;
 let currentLng = CONFIG.lng;
 
+// Carte
+let map = null;
+let currentMarker = null;
+let restrictionsLayer = null;
+let restrictionsVisible = false;
+let ignLayer = null;
+let osmLayer = null;
+let currentBaseLayer = null;
+
+// ================================================================
+// UTILITAIRES
+// ================================================================
+
+/**
+ * Récupère une valeur sûre (non-null, non-undefined, non-NaN)
+ */
+function safe(value, fallback = 0) {
+    if (value === null || value === undefined || Number.isNaN(value)) {
+        return fallback;
+    }
+    return value;
+}
+
+/**
+ * Arrondit un nombre en toute sécurité
+ */
+function safeRound(value, decimals = 1, fallback = 0) {
+    const v = safe(value, fallback);
+    const factor = Math.pow(10, decimals);
+    return Math.round(v * factor) / factor;
+}
+
 // ================================================================
 // SAUVEGARDE DES SEUILS
 // ================================================================
@@ -432,7 +526,6 @@ function saveThresholds(thresholds) {
         localStorage.setItem('droneWeather_batteryBase', document.getElementById('batteryBase').value);
         localStorage.setItem('droneWeather_city', document.getElementById('citySearch').value);
         localStorage.setItem('droneWeather_days', document.getElementById('forecastDays').value);
-        console.log('✅ Seuils sauvegardés');
     } catch (e) {
         console.warn('Impossible de sauvegarder:', e);
     }
@@ -445,23 +538,23 @@ function loadThresholds() {
             const th = JSON.parse(saved);
             CONFIG.thresholds = th;
             
-            document.getElementById('maxWind').value = th.maxWind || 25;
-            document.getElementById('maxWindOrange').value = th.maxWindOrange || 35;
-            document.getElementById('maxGust').value = th.maxGust || 30;
-            document.getElementById('minTemp').value = th.minTemp || 0;
-            document.getElementById('maxTemp').value = th.maxTemp || 35;
-            document.getElementById('maxHumidity').value = th.maxHumidity || 70;
-            document.getElementById('maxHumidityOrange').value = th.maxHumidityOrange || 80;
-            document.getElementById('maxHumidityRed').value = th.maxHumidityRed || 85;
-            document.getElementById('maxPrecipProb').value = th.maxPrecipProb || 40;
-            document.getElementById('maxPrecipInt').value = th.maxPrecipInt || 2.5;
-            document.getElementById('maxCloud').value = th.maxCloud || 75;
-            document.getElementById('minVis').value = th.minVis || 8;
-            document.getElementById('minVisOrange').value = th.minVisOrange || 5;
-            document.getElementById('maxKp').value = th.maxKp || 4;
-            document.getElementById('maxKpOrange').value = th.maxKpOrange || 6;
-            document.getElementById('minLocked').value = th.minLocked || 13;
-            document.getElementById('minCloudBase').value = th.minCloudBase || 305;
+            document.getElementById('maxWind').value = th.maxWind ?? 25;
+            document.getElementById('maxWindOrange').value = th.maxWindOrange ?? 35;
+            document.getElementById('maxGust').value = th.maxGust ?? 30;
+            document.getElementById('minTemp').value = th.minTemp ?? 0;
+            document.getElementById('maxTemp').value = th.maxTemp ?? 35;
+            document.getElementById('maxHumidity').value = th.maxHumidity ?? 70;
+            document.getElementById('maxHumidityOrange').value = th.maxHumidityOrange ?? 80;
+            document.getElementById('maxHumidityRed').value = th.maxHumidityRed ?? 85;
+            document.getElementById('maxPrecipProb').value = th.maxPrecipProb ?? 40;
+            document.getElementById('maxPrecipInt').value = th.maxPrecipInt ?? 2.5;
+            document.getElementById('maxCloud').value = th.maxCloud ?? 75;
+            document.getElementById('minVis').value = th.minVis ?? 8;
+            document.getElementById('minVisOrange').value = th.minVisOrange ?? 5;
+            document.getElementById('maxKp').value = th.maxKp ?? 4;
+            document.getElementById('maxKpOrange').value = th.maxKpOrange ?? 6;
+            document.getElementById('minLocked').value = th.minLocked ?? 13;
+            document.getElementById('minCloudBase').value = th.minCloudBase ?? 305;
             return true;
         }
     } catch (e) {}
@@ -472,9 +565,12 @@ function loadBatteryBase() {
     try {
         const saved = localStorage.getItem('droneWeather_batteryBase');
         if (saved) {
-            document.getElementById('batteryBase').value = saved;
-            CONFIG.batteryBase = parseFloat(saved) || 21;
-            return true;
+            const val = parseFloat(saved);
+            if (!Number.isNaN(val) && val > 0) {
+                document.getElementById('batteryBase').value = val;
+                CONFIG.batteryBase = val;
+                return true;
+            }
         }
     } catch (e) {}
     return false;
@@ -495,9 +591,12 @@ function loadDays() {
     try {
         const saved = localStorage.getItem('droneWeather_days');
         if (saved) {
-            document.getElementById('forecastDays').value = saved;
-            CONFIG.days = parseInt(saved) || 3;
-            return true;
+            const val = parseInt(saved);
+            if (!Number.isNaN(val) && val > 0) {
+                document.getElementById('forecastDays').value = val;
+                CONFIG.days = val;
+                return true;
+            }
         }
     } catch (e) {}
     return false;
@@ -514,6 +613,7 @@ const CITIES = [
     'Tokyo', 'Osaka', 'Kyoto', 'Nagoya', 'Sapporo', 'Fukuoka',
     'Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide', 'Gold Coast', 'Canberra',
     'Auckland', 'Wellington', 'Christchurch', 'Queenstown', 'La Motte Saint Jean', 'Dunedin', 'Hamilton',
+    'Gruissan', 'Narbonne', 'Perpignan', 'Sète', 'Agde', 'Béziers', 'Carcassonne',
     'Berlin', 'Munich', 'Hamburg', 'Cologne', 'Frankfurt', 'Stuttgart', 'Düsseldorf', 'Dortmund', 'Essen', 'Leipzig',
     'Vienna', 'Zurich', 'Geneva', 'Bern', 'Lausanne', 'Basel',
     'Brussels', 'Antwerp', 'Ghent', 'Bruges', 'Leuven',
@@ -555,7 +655,7 @@ const CITIES = [
 ];
 
 // ================================================================
-// APIS - 100% RÉELLES
+// APIS
 // ================================================================
 
 async function geocodeCity(cityName) {
@@ -566,10 +666,17 @@ async function geocodeCity(cityName) {
     if (!response.ok) throw new Error('Erreur géocodage');
     const data = await response.json();
     if (data.length === 0) throw new Error('Ville non trouvée');
+    
+    // Détecter le pays
+    const countryCode = data[0].address?.country_code?.toLowerCase() || '';
+    const isFrance = countryCode === 'fr';
+    
     return {
         lat: parseFloat(data[0].lat),
         lng: parseFloat(data[0].lon),
-        displayName: data[0].display_name
+        displayName: data[0].display_name,
+        countryCode: countryCode,
+        isFrance: isFrance
     };
 }
 
@@ -577,7 +684,23 @@ async function fetchWeather(lat, lng, days) {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&hourly=temperature_2m,dewpoint_2m,relative_humidity_2m,precipitation,cloud_cover,visibility,wind_speed_10m,wind_gusts_10m&daily=sunrise,sunset&timezone=auto&forecast_days=${days}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Erreur API: ${response.status}`);
-    return await response.json();
+    const data = await response.json();
+    
+    if (!data?.hourly?.time || !data?.daily?.sunrise || !data?.daily?.sunset) {
+        throw new Error('Données API incomplètes');
+    }
+    
+    const requiredFields = ['temperature_2m', 'dewpoint_2m', 'relative_humidity_2m', 
+                           'precipitation', 'cloud_cover', 'visibility', 
+                           'wind_speed_10m', 'wind_gusts_10m'];
+    
+    for (const field of requiredFields) {
+        if (!data.hourly[field]) {
+            console.warn(`Champ manquant dans l'API: ${field}`);
+        }
+    }
+    
+    return data;
 }
 
 async function fetchKp() {
@@ -593,7 +716,7 @@ async function fetchKp() {
         if (Array.isArray(data) && data.length > 1) {
             const lastRow = data[data.length - 1];
             const kp = parseFloat(lastRow[1]);
-            if (!isNaN(kp)) return Math.round(Math.min(Math.max(kp, 0), 9) * 100) / 100;
+            if (!Number.isNaN(kp)) return Math.round(Math.min(Math.max(kp, 0), 9) * 100) / 100;
         }
         return null;
     } catch (error) {
@@ -619,17 +742,49 @@ function getCurrentPosition() {
 // CALCULS
 // ================================================================
 
-function parseSunTimes(data, dayIndex) {
-    if (!data?.daily) return null;
-    const sunrise = new Date(data.daily.sunrise[dayIndex]);
-    const sunset = new Date(data.daily.sunset[dayIndex]);
+function parseSunTimes(data, dateStr) {
+    if (!data?.daily?.sunrise || !data?.daily?.sunset) return null;
+    
+    const dayIndex = data.daily.time.indexOf(dateStr);
+    if (dayIndex === -1) return null;
+    
+    const sunriseStr = data.daily.sunrise[dayIndex];
+    const sunsetStr = data.daily.sunset[dayIndex];
+    
+    if (!sunriseStr || !sunsetStr) return null;
+    
+    const sunriseTime = sunriseStr.split('T')[1];
+    const sunsetTime = sunsetStr.split('T')[1];
+    
+    const [srH, srM] = sunriseTime.split(':').map(Number);
+    const [ssH, ssM] = sunsetTime.split(':').map(Number);
+    
+    const sunrise = srH + srM / 60;
+    const sunset = ssH + ssM / 60;
+    
     return {
-        sunrise: sunrise.getHours() + sunrise.getMinutes() / 60,
-        sunset: sunset.getHours() + sunset.getMinutes() / 60,
-        dayLength: (sunset - sunrise) / 3600000,
-        sunriseDate: sunrise,
-        sunsetDate: sunset
+        sunrise: sunrise,
+        sunset: sunset,
+        dayLength: sunset - sunrise,
+        sunriseDate: sunriseStr,
+        sunsetDate: sunsetStr
     };
+}
+
+function getCurrentHourInTimezone(timezone) {
+    try {
+        const now = new Date();
+        const options = { 
+            timeZone: timezone || 'Europe/Paris', 
+            hour: 'numeric', 
+            hour12: false 
+        };
+        const hourStr = now.toLocaleString('fr-FR', options);
+        const hour = parseInt(hourStr.split(':')[0].replace(/\D/g, ''));
+        return Number.isNaN(hour) ? now.getHours() : hour;
+    } catch (e) {
+        return new Date().getHours();
+    }
 }
 
 function isDayHour(hour, sunTimes) {
@@ -673,48 +828,53 @@ function getCondensationStatus(temp, dewPoint) {
 }
 
 // ================================================================
-// CALCUL SCORE AVEC PÉNALITÉ HUMIDITÉ + CONDENSATION
+// SCORE
 // ================================================================
 
 function calculateScore(temp, windSpeed, gustSpeed, precipitation, cloudCover, visibility, kp, humidity, dewPoint) {
+    temp = safe(temp, 15);
+    windSpeed = safe(windSpeed, 0);
+    gustSpeed = safe(gustSpeed, windSpeed);
+    precipitation = safe(precipitation, 0);
+    cloudCover = safe(cloudCover, 0);
+    visibility = safe(visibility, 10);
+    kp = safe(kp, 2);
+    humidity = safe(humidity, 50);
+    dewPoint = safe(dewPoint, temp - 5);
+    
     const th = CONFIG.thresholds;
     let deductions = 0;
     
-    // ===== VENT (CORRIGÉ) =====
-    // DANGER : vent > 35 OU rafales > 45
+    // VENT
     if (windSpeed > th.maxWindOrange || gustSpeed > th.maxWindOrange + 10) {
         deductions += 35;
-    }
-    // PRUDENCE : vent > 25 OU rafales > 30
-    else if (windSpeed > th.maxWind || gustSpeed > th.maxGust) {
+    } else if (windSpeed > th.maxWind || gustSpeed > th.maxGust) {
         deductions += 20;
-    }
-    // PRUDENCE LÉGÈRE : vent > 20 OU rafales > 25
-    else if (windSpeed > th.maxWind - 5 || gustSpeed > th.maxGust - 5) {
+    } else if (windSpeed > th.maxWind - 5 || gustSpeed > th.maxGust - 5) {
         deductions += 10;
     }
     
-    // ===== PRÉCIPITATIONS =====
+    // PRÉCIPITATIONS
     if (precipitation > th.maxPrecipInt) deductions += 25;
     else if (precipitation > 0.5) deductions += 12;
     else if (precipitation > 0.2) deductions += 5;
     
-    // ===== NUAGES =====
+    // NUAGES
     if (cloudCover > 85) deductions += 15;
     else if (cloudCover > th.maxCloud) deductions += 10;
     else if (cloudCover > th.maxCloud - 15) deductions += 5;
     
-    // ===== VISIBILITÉ =====
+    // VISIBILITÉ
     if (visibility < th.minVisOrange) deductions += 20;
     else if (visibility < th.minVis) deductions += 10;
     else if (visibility < th.minVis + 2) deductions += 5;
     
-    // ===== KP =====
+    // KP
     if (kp > th.maxKpOrange) deductions += 25;
     else if (kp > th.maxKp) deductions += 12;
     else if (kp > th.maxKp - 0.5) deductions += 5;
     
-    // ===== HUMIDITÉ + CONDENSATION =====
+    // HUMIDITÉ + CONDENSATION
     if (humidity !== null && humidity !== undefined) {
         if (humidity > th.maxHumidityRed) deductions += 25;
         else if (humidity > th.maxHumidityOrange) deductions += 15;
@@ -727,7 +887,7 @@ function calculateScore(temp, windSpeed, gustSpeed, precipitation, cloudCover, v
         }
     }
     
-    // ===== TEMPÉRATURE =====
+    // TEMPÉRATURE
     if (temp !== null) {
         if (temp > th.maxTemp + 5 || temp < th.minTemp - 5) deductions += 25;
         else if (temp > th.maxTemp || temp < th.minTemp) deductions += 12;
@@ -750,26 +910,48 @@ function getStatusFromScore(score) {
     return { text: '⛔ DANGER', class: 'status-danger' };
 }
 
+function getStatusClass(value, thresholdLow, thresholdHigh, invertLow = false, invertHigh = false) {
+    if (value === undefined || value === null || Number.isNaN(value)) return 'cell-ok';
+    let color = 'cell-ok';
+    if (!invertLow && !invertHigh) {
+        if (value < thresholdLow) color = 'cell-danger';
+        else if (value > thresholdHigh) color = 'cell-danger';
+        else if (value < thresholdLow + (thresholdHigh - thresholdLow) * 0.3) color = 'cell-warn';
+        else if (value > thresholdHigh - (thresholdHigh - thresholdLow) * 0.3) color = 'cell-warn';
+    } else if (invertLow) {
+        if (value < thresholdLow) color = 'cell-danger';
+        else if (value < thresholdLow * 1.5) color = 'cell-warn';
+    } else if (invertHigh) {
+        if (value > thresholdHigh) color = 'cell-danger';
+        else if (value > thresholdHigh * 0.7) color = 'cell-warn';
+    }
+    return color;
+}
+
 // ================================================================
-// CALCUL AUTONOMIE BATTERIE
+// AUTONOMIE BATTERIE
 // ================================================================
 
 function calculateBatteryReal(windSpeed, gustSpeed, temp, humidity, precipitation, baseMinutes) {
+    windSpeed = safe(windSpeed, 0);
+    gustSpeed = safe(gustSpeed, windSpeed);
+    temp = safe(temp, 20);
+    humidity = safe(humidity, 50);
+    precipitation = safe(precipitation, 0);
+    baseMinutes = safe(baseMinutes, 21);
+    
     let factor = 1.0;
     
-    // Vent
     if (windSpeed > 10) {
         const windPenalty = Math.min((windSpeed - 10) * 0.025, 0.35);
         factor -= windPenalty;
     }
     
-    // Rafales
     if (gustSpeed > 15) {
         const gustPenalty = Math.min((gustSpeed - 15) * 0.015, 0.20);
         factor -= gustPenalty;
     }
     
-    // Température
     if (temp < 15) {
         const coldPenalty = Math.min((15 - temp) * 0.025, 0.30);
         factor -= coldPenalty;
@@ -783,14 +965,12 @@ function calculateBatteryReal(windSpeed, gustSpeed, temp, humidity, precipitatio
         factor -= heatPenalty;
     }
     
-    // Humidité
     if (humidity !== null && humidity !== undefined) {
         if (humidity > 80) factor -= 0.08;
         else if (humidity > 70) factor -= 0.04;
         else if (humidity > 60) factor -= 0.02;
     }
     
-    // Précipitations
     if (precipitation > 0.5) {
         const rainPenalty = Math.min(precipitation * 0.06, 0.15);
         factor -= rainPenalty;
@@ -805,45 +985,57 @@ function calculateBatteryReal(windSpeed, gustSpeed, temp, humidity, precipitatio
 // ================================================================
 
 function processForecastData(apiData, kp) {
-    if (!apiData?.hourly) return [];
+    if (!apiData?.hourly?.time) return [];
     
     const result = [];
-    const hoursPerDay = 24;
-    const totalHours = apiData.hourly.time.length;
-    const days = Math.min(CONFIG.days, Math.floor(totalHours / hoursPerDay));
-    const now = new Date();
-    const currentHour = now.getHours();
+    const hourly = apiData.hourly;
+    const timezone = apiData.timezone || 'Europe/Paris';
+    const currentHour = getCurrentHourInTimezone(timezone);
     
-    for (let d = 0; d < days; d++) {
-        const dayOffset = d * hoursPerDay;
-        const dateStr = new Date(apiData.hourly.time[dayOffset]).toLocaleDateString('fr-FR', { 
+    // Grouper les heures par date réelle
+    const groupedByDate = {};
+    hourly.time.forEach((timeStr, idx) => {
+        const dateStr = timeStr.split('T')[0];
+        if (!groupedByDate[dateStr]) {
+            groupedByDate[dateStr] = [];
+        }
+        groupedByDate[dateStr].push(idx);
+    });
+    
+    const sortedDates = Object.keys(groupedByDate).sort();
+    const daysToProcess = sortedDates.slice(0, CONFIG.days);
+    
+    daysToProcess.forEach((dateStr, dayIdx) => {
+        const indices = groupedByDate[dateStr];
+        const sunTimes = parseSunTimes(apiData, dateStr);
+        
+        const dateObj = new Date(dateStr + 'T12:00:00');
+        const dateFormatted = dateObj.toLocaleDateString('fr-FR', { 
             weekday: 'long', day: 'numeric', month: 'short' 
         });
-        const sunTimes = parseSunTimes(apiData, d);
         
         const hours = [];
-        for (let h = 0; h < hoursPerDay; h++) {
-            const idx = dayOffset + h;
-            if (idx >= apiData.hourly.time.length) break;
+        
+        indices.forEach(idx => {
+            const timeStr = hourly.time[idx];
+            const hour = parseInt(timeStr.split('T')[1].split(':')[0]);
             
-            const hour = new Date(apiData.hourly.time[idx]).getHours();
-            const isDay = isDayHour(hour, sunTimes);
+            if (sunTimes && !isDayHour(hour, sunTimes)) return;
             
-            if (!isDay) continue;
+            const temp = safeRound(hourly.temperature_2m?.[idx], 1, 15);
+            const dew = safeRound(hourly.dewpoint_2m?.[idx], 1, temp - 5);
+            const humidity = Math.round(safe(hourly.relative_humidity_2m?.[idx], 50));
+            const wind = safeRound(hourly.wind_speed_10m?.[idx], 1, 0);
             
-            let isPast = false;
-            if (d === 0) {
-                isPast = hour < currentHour;
+            let gust = hourly.wind_gusts_10m?.[idx];
+            if (gust === null || gust === undefined || Number.isNaN(gust)) {
+                gust = wind;
             }
+            gust = safeRound(gust, 1, wind);
             
-            const temp = Math.round(apiData.hourly.temperature_2m[idx] * 10) / 10;
-            const dew = Math.round(apiData.hourly.dewpoint_2m[idx] * 10) / 10;
-            const humidity = Math.round(apiData.hourly.relative_humidity_2m[idx]);
-            const wind = Math.round(apiData.hourly.wind_speed_10m[idx] * 10) / 10;
-            const gust = Math.round(apiData.hourly.wind_gusts_10m[idx] * 10) / 10;
-            const precip = Math.round(apiData.hourly.precipitation[idx] * 100) / 100;
-            const cloud = Math.round(apiData.hourly.cloud_cover[idx]);
-            const visibility = Math.round(apiData.hourly.visibility[idx] / 1000 * 10) / 10;
+            const precip = safeRound(hourly.precipitation?.[idx], 2, 0);
+            const cloud = Math.round(safe(hourly.cloud_cover?.[idx], 0));
+            const visibility = safeRound((hourly.visibility?.[idx] ?? 10000) / 1000, 1, 10);
             
             const maxAlt = estimateMaxAltitude(wind, gust);
             const sats = estimateSats(kp, cloud);
@@ -851,6 +1043,11 @@ function processForecastData(apiData, kp) {
             const battery = calculateBatteryReal(wind, gust, temp, humidity, precip, CONFIG.batteryBase);
             const cond = getCondensationStatus(temp, dew);
             const score = calculateScore(temp, wind, gust, precip, cloud, visibility, kp, humidity, dew);
+            
+            let isPast = false;
+            if (dayIdx === 0) {
+                isPast = hour < currentHour;
+            }
             
             hours.push({
                 hour: hour,
@@ -869,17 +1066,21 @@ function processForecastData(apiData, kp) {
                 battery: battery,
                 condensation: cond,
                 score: score,
-                isDay: isDay,
+                isDay: true,
                 isPast: isPast
             });
-        }
+        });
+        
+        hours.sort((a, b) => a.hour - b.hour);
         
         result.push({
-            dateStr: dateStr,
+            dateStr: dateFormatted,
+            dateRaw: dateStr,
             sunTimes: sunTimes,
             hours: hours
         });
-    }
+    });
+    
     return result;
 }
 
@@ -903,13 +1104,9 @@ function updateDisplay() {
         return;
     }
     
-    // Label du jour
-    const date = new Date(day.sunTimes?.sunriseDate || Date.now());
-    const options = { weekday: 'long', day: 'numeric', month: 'long' };
-    let text = date.toLocaleDateString('fr', options);
+    let text = day.dateStr;
     if (selectedDayIndex === 0) text = '📌 AUJOURD\'HUI - ' + text;
     document.getElementById('dayLabel').textContent = text;
-    document.getElementById('dayCount').textContent = `(${day.hours.length}h de vol)`;
     
     // Sun info
     const info = document.getElementById('sunInfo');
@@ -920,7 +1117,9 @@ function updateDisplay() {
         const sunset = Math.floor(s.sunset);
         const srMin = Math.round((s.sunrise - sunrise) * 60);
         const ssMin = Math.round((s.sunset - sunset) * 60);
-        const avgScore = day.hours.length > 0 ? Math.round(day.hours.reduce((sum, h) => sum + h.score, 0) / day.hours.length) : 0;
+        const avgScore = day.hours.length > 0 
+            ? Math.round(day.hours.reduce((sum, h) => sum + h.score, 0) / day.hours.length) 
+            : 0;
         const scoreColor = avgScore >= 70 ? '#00d4a0' : avgScore >= 40 ? '#f5a623' : '#ff4757';
         info.innerHTML = `
             <span>📍 ${cityDisplay}</span>
@@ -928,12 +1127,12 @@ function updateDisplay() {
             <span>🌅 Lever: ${String(sunrise).padStart(2,'0')}h${String(srMin).padStart(2,'0')}</span>
             <span>🌇 Coucher: ${String(sunset).padStart(2,'0')}h${String(ssMin).padStart(2,'0')}</span>
             <span>☀️ Durée: ${Math.floor(s.dayLength)}h${Math.round((s.dayLength % 1) * 60)}min</span>
-    `;
+            <span style="color:${scoreColor};">📊 Score moyen: ${avgScore}%</span>
+        `;
     }
     
-    // Tableau
     const th = CONFIG.thresholds;
-    const batteryBase = CONFIG.batteryBase;
+    const batteryBase = CONFIG.batteryBase || 21;
     let html = '';
     
     day.hours.forEach(h => {
@@ -987,22 +1186,181 @@ function updateDisplay() {
     document.getElementById('tableBody').innerHTML = html;
 }
 
-function getStatusClass(value, thresholdLow, thresholdHigh, invertLow = false, invertHigh = false) {
-    if (value === undefined || value === null) return 'cell-ok';
-    let color = 'cell-ok';
-    if (!invertLow && !invertHigh) {
-        if (value < thresholdLow) color = 'cell-danger';
-        else if (value > thresholdHigh) color = 'cell-danger';
-        else if (value < thresholdLow + (thresholdHigh - thresholdLow) * 0.3) color = 'cell-warn';
-        else if (value > thresholdHigh - (thresholdHigh - thresholdLow) * 0.3) color = 'cell-warn';
-    } else if (invertLow) {
-        if (value < thresholdLow) color = 'cell-danger';
-        else if (value < thresholdLow * 1.5) color = 'cell-warn';
-    } else if (invertHigh) {
-        if (value > thresholdHigh) color = 'cell-danger';
-        else if (value > thresholdHigh * 0.7) color = 'cell-warn';
+// ================================================================
+// CARTE
+// ================================================================
+
+function initMap() {
+    if (typeof L === 'undefined') {
+        console.warn('Leaflet non chargé');
+        return;
     }
-    return color;
+    
+    map = L.map('map').setView([currentLat, currentLng], 13);
+
+    // Fond IGN (France)
+    ignLayer = L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}', {
+        attribution: '© IGN / Géoplateforme',
+        maxZoom: 19
+    });
+
+    // Fond CARTO Voyager (monde entier, gratuit)
+osmLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key=eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfcXk1cXI1djAiLCJqdGkiOiIwYTRiNzliMSJ9.HlhCmKs_6sLrc_ZSOSxi-OuUMJLcH0d46J83D9OUVcw', {
+    attribution: '© OpenStreetMap contributors © CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+});
+
+    // Par défaut : IGN
+    currentBaseLayer = ignLayer;
+    ignLayer.addTo(map);
+
+    updateMapMarker();
+
+    // Couche restrictions (uniquement pour la France)
+    restrictionsLayer = L.tileLayer('https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORTS.DRONES.RESTRICTIONS&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}', {
+        attribution: '© IGN / DGAC - Restrictions drones',
+        maxZoom: 19,
+        opacity: 0.7
+    });
+}
+
+function updateMapMarker(openPopup = true) {
+    if (!map) return;
+    
+    if (currentMarker) {
+        map.removeLayer(currentMarker);
+    }
+    
+    const droneIcon = L.divIcon({
+        className: 'drone-marker',
+        html: '<div><svg width="22" height="22" viewBox="0 0 24 24" fill="#0f1e2e"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/><path d="M5 3L3 5l2 2 2-2zM19 3l-2 2 2 2 2-2zM5 19l-2 2 2 2 2-2zM19 19l-2 2 2 2 2-2z"/><line x1="7" y1="7" x2="9" y2="9" stroke="#0f1e2e" stroke-width="2"/><line x1="17" y1="7" x2="15" y2="9" stroke="#0f1e2e" stroke-width="2"/><line x1="7" y1="17" x2="9" y2="15" stroke="#0f1e2e" stroke-width="2"/><line x1="17" y1="17" x2="15" y2="15" stroke="#0f1e2e" stroke-width="2"/></svg></div>',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+    });
+    
+    currentMarker = L.marker([currentLat, currentLng], { icon: droneIcon }).addTo(map);
+    currentMarker.bindPopup(`<b>📍 Position actuelle</b><br>${currentCity}`);
+    
+    if (openPopup) {
+        currentMarker.openPopup();
+    }
+    
+    map.flyTo([currentLat, currentLng], 13, { duration: 1 });
+}
+
+function switchMapLayer(isFrance) {
+    if (!map) return;
+    
+    // Enlever le fond actuel
+    if (currentBaseLayer && map.hasLayer(currentBaseLayer)) {
+        map.removeLayer(currentBaseLayer);
+    }
+    
+    // Enlever la couche restrictions si on sort de France
+    if (!isFrance && restrictionsVisible && restrictionsLayer && map.hasLayer(restrictionsLayer)) {
+        map.removeLayer(restrictionsLayer);
+        restrictionsVisible = false;
+    }
+    
+    // Gérer le bouton restrictions
+    const btnRestrictions = document.getElementById('mapToggleRestrictionsBtn');
+    if (!isFrance) {
+        btnRestrictions.disabled = true;
+        btnRestrictions.style.opacity = '0.5';
+        btnRestrictions.style.cursor = 'not-allowed';
+        btnRestrictions.title = 'Zones disponibles uniquement en France';
+        btnRestrictions.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Zones (France)';
+        btnRestrictions.className = 'map-btn map-btn-secondary';
+    } else {
+        btnRestrictions.disabled = false;
+        btnRestrictions.style.opacity = '1';
+        btnRestrictions.style.cursor = 'pointer';
+        btnRestrictions.title = '';
+        btnRestrictions.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Zones permanentes';
+        btnRestrictions.className = 'map-btn map-btn-secondary';
+    }
+    
+    // Ajouter le nouveau fond
+    if (isFrance) {
+        currentBaseLayer = ignLayer;
+        ignLayer.addTo(map);
+        
+        document.getElementById('mapInfo').className = 'map-info map-info-warning';
+        document.getElementById('mapInfo').innerHTML = `
+            <i class="fas fa-info-circle" style="margin-top:2px;"></i>
+            <div>
+                <strong>⚠️ Info :</strong> La couche Géoportail n'affiche que les zones <strong>permanentes</strong>. 
+                Pour les NOTAM, SUP-AIP et arrêtés municipaux, cliquez sur <strong>"Restrictions Airops"</strong>.
+            </div>
+        `;
+    } else {
+        currentBaseLayer = osmLayer;
+        osmLayer.addTo(map);
+        
+        document.getElementById('mapInfo').className = 'map-info map-info-globe';
+        document.getElementById('mapInfo').innerHTML = `
+            <i class="fas fa-globe" style="margin-top:2px;"></i>
+            <div>
+                <strong>🌍 Hors France :</strong> Les zones de restrictions françaises ne s'appliquent pas. 
+                Vérifiez la <strong>réglementation locale</strong> du pays avant de voler.
+            </div>
+        `;
+    }
+}
+
+function toggleRestrictions() {
+    if (!map || !restrictionsLayer) return;
+    
+    if (restrictionsVisible) {
+        map.removeLayer(restrictionsLayer);
+        restrictionsVisible = false;
+        document.getElementById('mapToggleRestrictionsBtn').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Zones permanentes';
+        document.getElementById('mapToggleRestrictionsBtn').className = 'map-btn map-btn-secondary';
+        
+        document.getElementById('mapInfo').className = 'map-info map-info-warning';
+        document.getElementById('mapInfo').innerHTML = `
+            <i class="fas fa-info-circle" style="margin-top:2px;"></i>
+            <div>
+                <strong>⚠️ Info :</strong> La couche Géoportail n'affiche que les zones <strong>permanentes</strong>. 
+                Pour les NOTAM, SUP-AIP et arrêtés municipaux, cliquez sur <strong>"Restrictions Airops"</strong>.
+            </div>
+        `;
+    } else {
+        map.addLayer(restrictionsLayer);
+        restrictionsVisible = true;
+        document.getElementById('mapToggleRestrictionsBtn').innerHTML = '<i class="fas fa-check"></i> Zones affichées';
+        document.getElementById('mapToggleRestrictionsBtn').className = 'map-btn map-btn-success';
+        
+        document.getElementById('mapInfo').className = 'map-info map-info-ok';
+        document.getElementById('mapInfo').innerHTML = `
+            <i class="fas fa-check-circle" style="margin-top:2px;"></i>
+            <div>
+                <strong>✅ Zones permanentes affichées</strong> (Géoportail). 
+                Pour les restrictions temporaires : <strong>"Restrictions Airops"</strong>.
+            </div>
+        `;
+    }
+}
+
+function openAiropsRestrictions() {
+    const url = `https://airops-supuav.fr/map/#13/${currentLat}/${currentLng}`;
+    window.open(url, '_blank');
+}
+
+function recenterMap() {
+    if (!map) return;
+    
+    map.flyTo([currentLat, currentLng], 15, {
+        duration: 1.5,
+        easeLinearity: 0.25
+    });
+    
+    setTimeout(() => {
+        if (currentMarker) {
+            currentMarker.openPopup();
+        }
+    }, 1600);
 }
 
 // ================================================================
@@ -1017,11 +1375,15 @@ async function loadAllData() {
     document.getElementById('dayLabel').textContent = '⏳ Chargement...';
     
     try {
-        const kp = await fetchKp() || 2;
+        const kp = await fetchKp() ?? 2;
         const weatherData = await fetchWeather(currentLat, currentLng, CONFIG.days);
+        
+        CONFIG.timezone = weatherData.timezone || 'Europe/Paris';
+        
         processedData = processForecastData(weatherData, kp);
         selectedDayIndex = 0;
         updateDisplay();
+        updateMapMarker();
         document.getElementById('locationStatus').textContent = '✅ ' + currentCity + ' · KP=' + kp;
     } catch (error) {
         console.error('Erreur:', error);
@@ -1070,9 +1432,13 @@ async function searchCity(cityName) {
         currentLat = result.lat;
         currentLng = result.lng;
         currentCity = cityName;
+        
+        switchMapLayer(result.isFrance);
+        
         document.getElementById('citySearch').value = cityName;
         localStorage.setItem('droneWeather_city', cityName);
         await loadAllData();
+        updateMapMarker();
     } catch (error) {
         document.getElementById('locationStatus').textContent = '❌ ' + error.message;
     }
@@ -1088,6 +1454,7 @@ async function useCurrentPosition() {
         await loadAllData();
         document.getElementById('citySearch').value = 'Ma position (GPS)';
         localStorage.setItem('droneWeather_city', 'Ma position (GPS)');
+        updateMapMarker();
     } catch (error) {
         document.getElementById('locationStatus').textContent = '❌ ' + error.message;
     }
@@ -1125,22 +1492,21 @@ function showSuggestions(query) {
 }
 
 // ================================================================
-// INTERACTIONS AVEC SAUVEGARDE AUTO
+// INTERACTIONS
 // ================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    // --- Charger les seuils sauvegardés ---
     loadThresholds();
     loadBatteryBase();
     loadDays();
     const cityLoaded = loadCity();
     
-    // --- Recherche ---
+    initMap();
+    
+    // Recherche
     document.getElementById('searchCityBtn').addEventListener('click', () => {
         const city = document.getElementById('citySearch').value.trim();
-        if (city) {
-            searchCity(city);
-        }
+        if (city) searchCity(city);
     });
     
     document.getElementById('citySearch').addEventListener('keydown', (e) => {
@@ -1163,16 +1529,23 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('droneWeather_city', e.target.value);
     });
     
-    // --- POSITION GPS (CORRIGÉ) ---
+    // GPS
     document.getElementById('locationBtn').addEventListener('click', function(e) {
         e.preventDefault();
         useCurrentPosition();
     });
     
-    // --- Autonomie ---
+    // Autonomie
     document.getElementById('batteryBase').addEventListener('change', (e) => {
-        CONFIG.batteryBase = parseInt(e.target.value) || 21;
+        const val = parseInt(e.target.value);
+        if (Number.isNaN(val) || val < 5 || val > 120) {
+            e.target.value = 21;
+            CONFIG.batteryBase = 21;
+        } else {
+            CONFIG.batteryBase = val;
+        }
         localStorage.setItem('droneWeather_batteryBase', CONFIG.batteryBase);
+        
         if (processedData.length > 0) {
             processedData = processedData.map(day => ({
                 ...day,
@@ -1185,21 +1558,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // --- Jours ---
+    // Jours
     document.getElementById('forecastDays').addEventListener('change', () => {
-        CONFIG.days = parseInt(document.getElementById('forecastDays').value);
+        CONFIG.days = parseInt(document.getElementById('forecastDays').value) || 3;
         localStorage.setItem('droneWeather_days', CONFIG.days);
         loadAllData();
     });
     
-    // --- Navigation jours ---
+    // Navigation
     document.getElementById('prevDayBtn').addEventListener('click', goToPrevDay);
     document.getElementById('nextDayBtn').addEventListener('click', goToNextDay);
-    
-    // --- Rafraîchir ---
     document.getElementById('refreshBtn').addEventListener('click', loadAllData);
     
-    // --- Seuils (avec sauvegarde) ---
+    // Carte
+    document.getElementById('mapRecenterBtn').addEventListener('click', recenterMap);
+    document.getElementById('mapToggleRestrictionsBtn').addEventListener('click', toggleRestrictions);
+    document.getElementById('mapAiropsBtn').addEventListener('click', openAiropsRestrictions);
+    
+    // Seuils
     document.getElementById('toggleSettings').addEventListener('click', () => {
         document.getElementById('settingsPanel').classList.toggle('open');
     });
@@ -1224,10 +1600,8 @@ document.addEventListener('DOMContentLoaded', function() {
         th.minLocked = parseInt(document.getElementById('minLocked').value) || 13;
         th.minCloudBase = parseFloat(document.getElementById('minCloudBase').value) || 305;
         
-        // Sauvegarde
         saveThresholds(th);
         
-        // Recalcul des scores
         if (processedData.length > 0) {
             processedData = processedData.map(day => ({
                 ...day,
@@ -1241,7 +1615,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('locationStatus').textContent = '✅ Seuils sauvegardés';
     });
     
-    // --- Aide ---
+    // Aide
     document.getElementById('helpBtn').addEventListener('click', () => {
         document.getElementById('helpModal').classList.add('open');
         document.body.style.overflow = 'hidden';
@@ -1268,7 +1642,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'ArrowRight') goToNextDay();
     });
     
-    // --- Chargement initial ---
+    // Chargement initial
     if (cityLoaded) {
         searchCity(cityLoaded);
     } else {
@@ -1276,7 +1650,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Rafraîchissement automatique toutes les 15 minutes
+// Rafraîchissement auto
 setInterval(loadAllData, 900000);
 </script>
 </body>
