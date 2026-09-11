@@ -19,6 +19,8 @@
         .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         .btn-help { background: #3a5a7a; border: none; color: #dce8f0; padding: 5px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: clamp(12px, 1.2vw, 15px); }
         .btn-help:hover { background: #4a7a9a; }
+        #shareBtn { background: #1a6a3a; }
+        #shareBtn:hover { background: #2a8a4a; }
         .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; background: #142b40; padding: 8px 14px; border-radius: 10px; width: 100%; }
         .controls label { font-size: clamp(12px, 1.2vw, 15px); display: flex; align-items: center; gap: 4px; }
         .controls select, .controls input { background: #1a3550; border: 1px solid #2a4a6a; color: #dce8f0; padding: 4px 8px; border-radius: 5px; font-size: clamp(12px, 1.2vw, 15px); }
@@ -151,6 +153,16 @@
         .modal .wool-tip { background: #1a3550; padding: 16px 20px; border-radius: 10px; margin: 12px 0; border-left: 4px solid #f5a623; }
         .modal .wool-tip ul { margin-left: 20px; line-height: 2; }
 
+        /* ===== TOAST PARTAGE ===== */
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes slideUp {
+            from { opacity: 1; transform: translateX(-50%) translateY(0); }
+            to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        }
+
         @media (max-width: 768px) {
             body { padding: 6px; }
             .header { flex-direction: column; align-items: stretch; gap: 8px; }
@@ -247,6 +259,7 @@
             Drone<span>Météo</span>
         </div>
         <div class="header-right">
+            <button class="btn-help" id="shareBtn"><i class="fas fa-share-alt"></i> Partager</button>
             <button class="btn-help" id="helpBtn">❓ Aide</button>
         </div>
     </div>
@@ -1205,11 +1218,11 @@ function initMap() {
     });
 
     // Fond CARTO Voyager (monde entier, gratuit)
-osmLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=eyJhbGciOiJIUzI1NiJ9.eyJhIjoiYWNfcXk1cXI1djAiLCJqdGkiOiIwYTRiNzliMSJ9.HlhCmKs_6sLrc_ZSOSxi-OuUMJLcH0d46J83D9OUVcw', {
-    attribution: '© OpenStreetMap contributors © CARTO',
-    subdomains: 'abcd',
-    maxZoom: 19
-});
+    osmLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=cb1_3gxo_1_9c77029c51a362aa8245a8a6', {
+        attribution: '© OpenStreetMap contributors © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+    });
 
     // Par défaut : IGN
     currentBaseLayer = ignLayer;
@@ -1361,6 +1374,129 @@ function recenterMap() {
             currentMarker.openPopup();
         }
     }, 1600);
+}
+
+// ================================================================
+// PARTAGE
+// ================================================================
+
+function shareWeather() {
+    if (!processedData || processedData.length === 0) {
+        showToast('❌ Aucune donnée à partager');
+        return;
+    }
+    
+    // Collecter TOUTES les heures futures (aujourd'hui + jours suivants)
+    let futureHours = [];
+    
+    for (let d = selectedDayIndex; d < processedData.length; d++) {
+        const day = processedData[d];
+        if (!day || day.hours.length === 0) continue;
+        
+        day.hours.forEach(h => {
+            if (h.isPast) return; // Ignorer les heures passées
+            futureHours.push({
+                ...h,
+                dayLabel: day.dateStr,
+                dayShort: day.dateStr.split(' ')[0] + ' ' + day.dateStr.split(' ')[1] // ex: "vendredi 12"
+            });
+        });
+    }
+    
+    if (futureHours.length === 0) {
+        showToast('⏰ Aucune heure de vol à venir');
+        return;
+    }
+    
+    // Trier par score décroissant
+    futureHours.sort((a, b) => b.score - a.score);
+    
+    // Prendre les 3 meilleures
+    const top3 = futureHours.slice(0, 3);
+    
+    // Construire le texte
+    let text = `🚁 Météo vol drone - ${currentCity}\n`;
+    text += `📅 ${top3[0].dayLabel}\n\n`;
+    text += `🏆 Top ${top3.length} des meilleures heures :\n\n`;
+    
+    const medals = ['🥇', '🥈', '🥉'];
+    top3.forEach((h, idx) => {
+        text += `${medals[idx]} ${String(h.hour).padStart(2,'0')}:00 (${h.score}%) · `;
+        text += `${h.temp}°C · ${h.wind} km/h`;
+        
+        // Si l'heure est dans un autre jour, l'indiquer
+        if (h.dayLabel !== top3[0].dayLabel) {
+            text += ` (${h.dayShort})`;
+        }
+        
+        text += '\n';
+    });
+    
+    text += `\n👉 f5ior.github.io/dronemeteo`;
+    
+    // Copier dans le presse-papier
+    copyToClipboard(text);
+}
+
+function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                showToast('✅ Copié ! Colle-le où tu veux');
+            })
+            .catch(() => {
+                fallbackCopy(text);
+            });
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        showToast('✅ Copié ! Colle-le où tu veux');
+    } catch (err) {
+        showToast('❌ Impossible de copier');
+    }
+    document.body.removeChild(textarea);
+}
+
+function showToast(message) {
+    const existing = document.getElementById('droneToast');
+    if (existing) existing.remove();
+    
+    const toast = document.createElement('div');
+    toast.id = 'droneToast';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1a6a3a;
+        color: white;
+        padding: 14px 28px;
+        border-radius: 10px;
+        z-index: 9999;
+        font-weight: bold;
+        font-size: 15px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        border: 1px solid rgba(255,255,255,0.2);
+        animation: slideDown 0.3s ease;
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideUp 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 2200);
 }
 
 // ================================================================
@@ -1574,6 +1710,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('mapRecenterBtn').addEventListener('click', recenterMap);
     document.getElementById('mapToggleRestrictionsBtn').addEventListener('click', toggleRestrictions);
     document.getElementById('mapAiropsBtn').addEventListener('click', openAiropsRestrictions);
+    
+    // Partage
+    document.getElementById('shareBtn').addEventListener('click', shareWeather);
     
     // Seuils
     document.getElementById('toggleSettings').addEventListener('click', () => {
