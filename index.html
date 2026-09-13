@@ -130,6 +130,15 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
+/* Marqueur temporaire (clic sur carte) */
+.temp-marker { background: transparent !important; border: none !important; }
+.temp-marker > div {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    box-sizing: border-box !important;
+}
+
         /* ===== MODAL AIDE ===== */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 20px; overflow-y: auto; }
         .modal-overlay.open { display: flex; }
@@ -1310,6 +1319,8 @@ function initMap() {
         maxZoom: 19,
         opacity: 0.7
     });
+    // ✅ Clic sur la carte → position temporaire
+    map.on('click', handleMapClick);
 }
 
 function updateMapMarker(openPopup = true) {
@@ -1448,6 +1459,67 @@ function recenterMap() {
             currentMarker.openPopup();
         }
     }, 1600);
+}
+
+function handleMapClick(e) {
+    const clickedLat = e.latlng.lat;
+    const clickedLng = e.latlng.lng;
+    
+    // Créer un marqueur temporaire
+    const tempIcon = L.divIcon({
+        className: 'temp-marker',
+        html: '<div style="background: #f0b34b; border-radius: 50%; padding: 4px; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;"><i class="fas fa-map-pin" style="color: #0f1e2e; font-size: 16px;"></i></div>',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    });
+    
+    // Supprimer l'ancien marqueur temporaire s'il existe
+    if (window.tempMarker) {
+        map.removeLayer(window.tempMarker);
+    }
+    
+    // Ajouter le nouveau marqueur temporaire
+    window.tempMarker = L.marker([clickedLat, clickedLng], { icon: tempIcon }).addTo(map);
+    
+    // Créer le popup avec les coordonnées et un bouton
+    const popupContent = `
+        <div style="min-width: 180px;">
+            <b>📍 Position choisie</b><br>
+            <small>${clickedLat.toFixed(4)}, ${clickedLng.toFixed(4)}</small><br><br>
+            <button 
+                onclick="useClickedPosition(${clickedLat}, ${clickedLng})" 
+                style="background: #1a6a3a; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%;">
+                ✅ Utiliser cette position
+            </button>
+        </div>
+    `;
+    
+    window.tempMarker.bindPopup(popupContent).openPopup();
+}
+
+function useClickedPosition(lat, lng) {
+    // Mettre à jour les coordonnées
+    currentLat = lat;
+    currentLng = lng;
+    currentCity = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    
+    // Retirer le marqueur temporaire
+    if (window.tempMarker) {
+        map.removeLayer(window.tempMarker);
+        window.tempMarker = null;
+    }
+    
+    // Mettre à jour l'interface
+    document.getElementById('citySearch').value = currentCity;
+    localStorage.setItem('droneWeather_city', currentCity);
+    
+    // Déterminer si c'est en France (bounding box approximative)
+    const isFrance = (lat >= 41 && lat <= 51.5 && lng >= -5.5 && lng <= 9.5);
+    switchMapLayer(isFrance);
+    
+    // Recharger les données
+    loadAllData();
+    updateMapMarker();
 }
 
 // ================================================================
